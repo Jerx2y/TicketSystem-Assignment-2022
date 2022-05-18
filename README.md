@@ -2,6 +2,10 @@
 
 > [SJTU CS1951 课程大作业](https://github.com/ACMClassCourse-2021/TicketSystem)
 
+## Version
+
+2.1
+
 ## 然然今天吃火车🚂
 |Contributor | Mission |
 | -------- | -------- |
@@ -11,6 +15,22 @@
 
 ## 代码风格
 Google
+
+## 模块划分
+
+[![](https://s1.ax1x.com/2022/05/18/O7uOoT.jpg)](https://imgtu.com/i/O7uOoT)
+
+### 存储模块 `/file`
+
+包含文件读写，文件数据结构。
+
+### 工具模块 `/lib`
+
+包含 `vector`, `linked_hashmap` 等数据结构以及一些其他工具。
+
+### 管理系统模块 `/src`
+
+包含火车票系统管理命令的实现。
 
 ## 类 class
 
@@ -138,41 +158,6 @@ class Order {
 };
 ```
 
-### 用户管理 UserManager
-```cpp
-class UserManager {
-    BPT user; // 根据 username 查询 User
-    void add_user()
-    void query_profile()
-    void modify_profile()
-};
-```
-
-### 火车管理 TrainManager
-```cpp
-class TrainManager {
-    BPT train; // 根据 trainID 查询 Train
-    BPT station_train // 根据 stationID 查询 trainID
-    void add_train()
-    void release_train()
-    void query_train()
-    void query_ticket()
-    void query_transfer()
-};
-```
-
-### 订单管理 OrderManager
-```cpp
-class OrderManager {
-    BPT order; // 根据 orderID 查询 Order
-    BPT user_order; // 根据 username 查询 orderID
-    list<int> queue; // 按时间顺序存储候补订单的编号
-    void buy_ticket()
-    void refund_ticket()
-    void query_order() // 查询用户的订单信息
-};
-```
-
 ### 日志 Log
 ```cpp
 /*
@@ -189,15 +174,29 @@ class Log {
 ### 管理 TicketSystem
 ```cpp
 class TicketSystem {
-    UserManager user;
-    TrainManager train;
-    OrderManager order;
     Log recorder;
     linked_hashmap online; // 存储在线用户池
-    void login()
-    void logout()
-    void clean()
-    void exit()
+    BPT user; // 根据 username 查询 User
+    BPT train; // 根据 trainID 查询 Train
+    BPT station_train // 根据 stationID 查询 trainID
+    BPT order; // 根据 orderID 查询 Order
+    BPT user_order; // 根据 username 查询 orderID
+    list<int> queue; // 按时间顺序存储候补订单的编号
+    void add_user();
+    void query_profile();
+    void modify_profile();
+    void add_train();
+    void release_train();
+    void query_train();
+    void query_ticket();
+    void query_transfer();
+    void buy_ticket();
+    void refund_ticket();
+    void query_order();
+    void login();
+    void logout();
+    void clean();
+    void exit();
 };
 ```
 
@@ -207,7 +206,7 @@ class TicketSystem {
 
 > 文件按照包含关系的拓扑序排列
 
-#### Exception.h
+#### exception.h
 
 + 实现 Exception 类
 
@@ -247,18 +246,6 @@ class TicketSystem {
 
 + 实现 Order 类
 
-#### UserManager.h
-
-+ 实现 UserManager 类
-
-#### TrainManager.h
-
-+ 实现 TrainManager 类
-
-#### OrderManager.h
-
-+ 实现 OrderManager 类
-
 #### Log.h
 
 + 实现 Log 类
@@ -271,6 +258,7 @@ class TicketSystem {
 
 + `std::string nextToken()` （处理输入命令）
 + `int stringToInt()` （转 string 到 int） 
++ 以及其他必要的工具函数
 
 #### main.cpp
 
