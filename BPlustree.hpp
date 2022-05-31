@@ -41,7 +41,7 @@ namespace jl{
             ll son[BLOCK_SIZE];
             Node key[BLOCK_SIZE];
             int num = 0;
-            std::pair<Block*,ll> *fa;//存储父节点，内存地址
+            std::pair<Block*,ll> fa;//存储父节点，内存地址
         public:
             Block();
         };
@@ -51,7 +51,7 @@ namespace jl{
             int nxt = -1;
             int pre = -1;
             int num = 0;
-            Block *fa;
+            std::pair<Block*,ll> fa;
             //read head and tail from array
             Node array[LEAVE_SIZE+2];
         public:
@@ -101,7 +101,8 @@ namespace jl{
             return n1.value<n2.value;
 
         }
-
+        void recycle_leave(ll index){}
+        void recycle_block(ll index){}
         ll add_one_leave(){//提供内存地址
             fileIndex.seekg(0);
             fileIndex.read(reinterpret_cast<char *>(&totalblock), sizeof(int));
@@ -337,39 +338,50 @@ namespace jl{
             }
             return false;
         }
-        bool bifind(const Block &b,const K &key,ll &value){
-            ll l = 1;
-            ll r = b.num;//数组key的大小
-            ll mid = (l+r)>>1;
-            while(l < r){
-                if(b.key[mid]>key)r = mid;
-                else l = mid+1;
-                mid = (l+r)>>1;
+        bool bifind(Block *&b,const K &key,ll &value){
+            int i;
+            for(i = 0; i <= b->num-1; ++i){
+                if(compare(b->key[i+1],key))continue;
             }
-            if(b.isbottom){
-                ll index = b.son[l];
+
+//            ll l = 1;
+//            ll r = b.num;//数组key的大小
+//            ll mid = (l+r)>>1;
+//            while(l < r){
+//                if(b.key[mid]>key)r = mid;
+//                else l = mid+1;
+//                mid = (l+r)>>1;
+//            }
+            if(b->isbottom){
+                ll index = b->son[i];
                 fileIndex.seekg(index);
                 Leave lea;
                 fileIndex.read(reinterpret_cast<char *>(&lea), sizeof(Leave));
+                lea.fa.first=b;
+                lea.fa.second=i;
                 return lfind(lea,key,value);
             }
-            else{
-                ll index = b.son[l];
+
+                ll index = b->son[i];
                 fileIndex.seekg(index);
                 Block bl;
                 fileIndex.read(reinterpret_cast<char *>(&bl), sizeof(Block));
-                return bifind(bl,key,value);
-            }
+                bl.fa.first=b;
+                bl.fa.second=i;
+                b=&bl;
+                return bifind(b,key,value);
+
         }
         bool biremove(const Block &b,const K &key, K &array_key){
             ll index_key = bisearch_block(b,key);
-            if(index_key!=0&&!compare(b.key[index_key],key)&&!compare(key,b.key[index_key]))array_key=&b.key[index_key];
-            ll index_son = b.son[index_key+1];
+//            if(index_key!=0&&!compare(b.key[index_key],key)&&!compare(key,b.key[index_key]))array_key=&b.key[index_key];
+            ll index_son = b.son[index_key];
             if(!b.isbottom){
                 Block bson;
                 fileIndex.seekg(index_son);
                 fileIndex.read(reinterpret_cast<char *>(&bson), sizeof(Block));
-                bson.fa = &b;
+                bson.fa.first = &b;
+                bson.fa.second=index_key;
                 if(!biremove(bson,key)){
                     fileIndex.seekg(index_son);
                     fileIndex.write(reinterpret_cast<char *>(&bson), sizeof(Block));
@@ -383,7 +395,8 @@ namespace jl{
                 Leave lson;
                 fileIndex.seekg(index_son);
                 fileIndex.read(reinterpret_cast<char *>(&lson), sizeof(Leave));
-                lson.fa = &b;
+                lson.fa.first = &b;
+                lson.fa.second=index_key;
                 if(!leremove(lson,key)){
                     fileIndex.seekg(index_son);
                     fileIndex.write(reinterpret_cast<char *>(&lson), sizeof(Leave));
@@ -395,28 +408,117 @@ namespace jl{
                 }
             }
         }
-        bool leremove(Leave &l, const K &key){
+        void get_one_child_r(Leave &le,Leave &rle){
+            le.num++;
+            rle.num--;
+            le.array[le.num]=rle.array[1];
+            for(int i = 1; i <= rle.num; ++i){
+                rle.array[i]=rle.array[i+1];
+            }
+        }
+        void get_one_child_l(Leave &le,Leave &lle){
+            le.num++;
+            lle.num--;
+            le.array[le.num]=lle.array[1];
+            for(int i = 1; i <= lle.num; ++i){
+                lle.array[i]=lle.array[i+1];
+            }
+        }
+        void merge_r(Leave &le,Leave &rle){
+            for(int i = le.num+1; i <= le.num+rle.num; ++i){
+                le.array[i]=rle.array[i-le.num];
+            }
+            le.num+=rle.num;
+        }
+        void merge_l(Leave &le,Leave &lle){
+            for(int i = le.num+1; i <= le.num+lle.num; ++i){
+                le.array[i]=lle.array[i-le.num];
+            }
+            le.num+=lle.num;
+        }
+        bool leremove(Leave &l, const K &key,ll now_index,int key_index){
+            //npw_index是文件下标
+            //key_index是son[]的下标
             ll index = bisearch_leave(l,key);
             for(int i = index; i <= l.num; ++i){
                 l.array[i]=l.array[i+1];
             }
             l.num--;
-            if(l.num < LEAVE_MIN)return true;
-            return false;
+            if(l.num < LEAVE_MIN){
+                if(!l.fa.second){//对右邻居操作
+                    ll bro_index = l.fa.first->son[1];
+                    Leave bro_r;
+                    fileIndex.seekg(bro_index);
+                    fileIndex.read(reinterpret_cast<char *>(&bro_r), sizeof(Leave));
+                    if(bro_r.num>LEAVE_MIN){
+                        get_one_child_r(l,bro_r);
+                        l.fa.first->key[1]=bro_r.array[1].key;
+                        fileIndex.seekg(bro_index);
+                        fileIndex.write(reinterpret_cast<char *>(&bro_r), sizeof(Leave));
+                        fileIndex.seekg(now_index);
+                        fileIndex.write(reinterpret_cast<char *>(&l), sizeof(Leave));
+                        return false;//false意思是fa被修改，需要写回文件
+                    }
+                    else{
+                        merge_r(l,bro_r);
+                        fileIndex.seekg(now_index);
+                        fileIndex.write(reinterpret_cast<char *>(&l), sizeof(Leave));
+                        recycle_leave(bro_index);
+                        --l.fa.first->num;
+                        for(int i = 1; i <= l.fa.first->num; ++i){
+                            l.fa.first->key[i]=l.fa.first->key[i+1];
+                        }
+                        return false;
+                    }
+                }
+                else{//对左邻居操作
+                    ll bro_index =l.fa.first->son[key_index-1];
+                    Leave bro_l;
+                    fileIndex.seekg(bro_index);
+                    fileIndex.read(reinterpret_cast<char *>(&bro_l), sizeof(Leave));
+                    if(bro_l.num > LEAVE_MIN){
+                        get_one_child_l(l,bro_l);
+                        l.fa.first->key[1]=bro_l.array[1].key;
+                        fileIndex.seekg(bro_index);
+                        fileIndex.write(reinterpret_cast<char *>(&bro_l), sizeof(Leave));
+                        fileIndex.seekg(now_index);
+                        fileIndex.write(reinterpret_cast<char *>(&l), sizeof(Leave));
+                        return false;//false意思是fa被修改，需要写回文件
+                    }
+                    else{
+                        merge_l(l,bro_l);
+                        fileIndex.seekg(now_index);
+                        fileIndex.write(reinterpret_cast<char *>(&l), sizeof(Leave));
+                        recycle_leave(bro_index);
+                        --l.fa.first->num;
+                        for(int i = 1; i <= l.fa.first->num; ++i){
+                            l.fa.first->key[i]=l.fa.first->key[i+1];
+                        }
+                        return false;
+                    }
+
+                }
+            }
+            else{
+                fileIndex.seekg(now_index);
+                fileIndex.write(reinterpret_cast<char *>(&l), sizeof(Leave));
+                return true;
+            }
+           
         }
         std::pair<Block *,ll> block_index;
-        pair<Block*,ll> find_to_bottom(const Block &b,const K &key){
-           if(!b.bottom){
-               int index= bisearch_block(b,key);
-               index=
-               Block son;
-               fileIndex.seekg(index);
-               fileIndex.read(reinterpret_cast<char *>(&son), sizeof(Block));
-               find_to_bottom()
-           }
-        }
-        void remove(const K &key){
-            block_index bottom_block =
+//        pair<Block*,ll> find_to_bottom(const Block &b,const K &key){
+//           if(!b.bottom){
+//               int index= bisearch_block(b,key);
+//               index=
+//               Block son;
+//               fileIndex.seekg(index);
+//               fileIndex.read(reinterpret_cast<char *>(&son), sizeof(Block));
+//               find_to_bottom()
+//           }
+//        }
+        void remove(const K &key){//确定存在的情况下
+
 
         }
 
