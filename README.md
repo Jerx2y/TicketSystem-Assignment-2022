@@ -10,10 +10,15 @@
         void Get(const K &key, std::vector<ll> &v) {
            v.clear();
         }
-
+        
+        void Insert(const K &key, ll &value){
+                insert(key,value);
+        }
+        
         void Set(const K &key, ll &value) {
             if (find(key, value)) {
-
+               remove(key);
+               insert(key,value);
             } else {
                 insert(key, value);
             }
