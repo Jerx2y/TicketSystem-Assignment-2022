@@ -42,8 +42,8 @@ namespace jl {
         class Block {//树上节点
         private:
             bool isbottom = false;
-            ll son[BLOCK_SIZE];
-            Node key[BLOCK_SIZE];
+            ll son[BLOCK_SIZE+5];
+            Node key[BLOCK_SIZE+5];
             int num = 0;
             std::pair<Block *, ll> fa;//存储父节点，内存地址
         public:
@@ -59,7 +59,7 @@ namespace jl {
             int num = 0;
             std::pair<Block *, ll> fa;
             //read head and tail from array
-            Node array[LEAVE_SIZE + 2];
+            Node array[LEAVE_SIZE + 5];
         public:
             void MergeBlock(const int &offset1, const int &offset2);
 
@@ -90,16 +90,6 @@ namespace jl {
         const int L;
 
         const int M;
-
-        void BorrowLeft(Block &l, Block &pa, int index);
-
-        void BorrowRight(Block &l, Block &pa, int index);
-
-        void MergeLeft(Block &l, Block &pa, int index);
-
-        void MergeRight(Block &l, Block &pa, int index);
-
-        std::vector<S> find(const K &key_, int index);
 
         bool compare(const Node &n1, const Node &n2) {
             if (com(n1.key, n2.key))return true;
@@ -139,10 +129,6 @@ namespace jl {
 
         bool findone(const K &key, ll &value) {//true 找到了， false没有找到
             return bifind(root, key, value);
-        }
-
-        void erase(const K &key, ll &index) {
-
         }
 
         void insert(const K &key, ll &value) {
@@ -643,24 +629,55 @@ namespace jl {
             }
 
         }
+
         void remove(const K &key) {//确定存在的情况下
             if (biremove(root, key, index_root)) {
-                if (root.num == 1&&!root.isbottom) {
+                if (root.num == 1 && !root.isbottom) {
                     recycle_block(index_root);
-                    index_root=root.son[0];
+                    index_root = root.son[0];
                     fileIndex.seekg(index_root);
                     fileIndex.read(reinterpret_cast<char *>(&root), sizeof(Block));
-                }
-                else {
+                } else {
                     fileIndex.seekg(index_root);
                     fileIndex.write(reinterpret_cast<char *>(&root), sizeof(Block));
                 }
             }
         }
-        void find_list_b(const Block &b,const K &k,std::vector<ll> &v){
-
+        void find_list_l(const Leave &le, const K &key, std::vector<ll> &v){
+            for(int i = 1; i <= le.num; ++i){
+                if(!com(le.array[i].key,key)&&!com(key,le.array[i].key))v.push_back(le.array[i].value);
+            }
         }
-        void find_list_l(const Leave &le,const K &k,std::vector<ll> &v){
+
+        void find_list_b(const Block &b, const K &key, std::vector<ll> &v) {
+            if(!b.isbottom){
+                int i;
+                for(i = 0;i <=b.num; ++i){
+                    if(com(b.key[i+1].key,key))continue;//小心越界
+                }
+                while(i<=b.num&&(com(b.key[i],key)||!com(b.key[i],key)&&!com(key,b.key[i]))){
+                    ll index_son=b.son[i];
+                    Block son;
+                    fileIndex.seekg(index_son);
+                    fileIndex.read(reinterpret_cast<char *>(&son), sizeof(Block));
+                    find_list_b(son,key,v);
+                    ++i;
+                }
+            }
+            else{
+                int i;
+                for(i = 0;i <=b.num; ++i){
+                    if(com(b.key[i+1].key,key))continue;//小心越界
+                }
+                while(i<=b.num&&(com(b.key[i],key)||!com(b.key[i],key)&&!com(key,b.key[i]))){
+                    ll index_son=b.son[i];
+                    Leave son;
+                    fileIndex.seekg(index_son);
+                    fileIndex.read(reinterpret_cast<char *>(&son), sizeof(Leave));
+                    find_list_l(son,key,v);
+                    ++i;
+                }
+            }
 
         }
 
@@ -702,12 +719,18 @@ namespace jl {
         }
 
         void Get(const K &key, std::vector<ll> &v) {
-           v.clear();
+            v.clear();
+            find_list_b(root, key, v);
+        }
+
+        void Insert(const K &key, ll &value) {
+            insert(key, value);
         }
 
         void Set(const K &key, ll &value) {
             if (find(key, value)) {
-
+                remove(key);
+                insert(key, value);
             } else {
                 insert(key, value);
             }
