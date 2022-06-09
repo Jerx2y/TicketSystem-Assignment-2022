@@ -169,7 +169,7 @@ namespace lailai {
                 cout << "&&" << endl;
                 int i;
                 for (i = 0; i < b.num; ++i) {
-                    if (com(key,b.key[i + 1].key))break;
+                    if (com(key,b.key[i + 1].key)|| !com(key,b.key[i+1].key)&&!com(b.key[i+1].key,key))break;//下一个位置关键字大于等于
                 }
                 while (i <= b.num){
                     ll index_son = b.son[i];
@@ -178,14 +178,14 @@ namespace lailai {
                     fileIndex.read(reinterpret_cast<char *>(&son), sizeof(Block));
                     find_list_b(son, key, v);
                     ++i;
-                    if( !com(key,b.key[i].key))break;
+                    if(i>b.num|| com(key,b.key[i].key))break;//新的位置关键字大于key
                 }
             } else {
                 cout << "$%$" << endl;
                 int i;
 //                cout << "debug" << b.num << endl;
                 for (i = 0; i < b.num; ++i) {
-                    if (com(key,b.key[i + 1].key))break;
+                    if (com(key,b.key[i + 1].key)||!com(key,b.key[i+1].key)&&!com(b.key[i+1].key,key))break;
                 }
 //                cout << "debug" << i << endl;
 //                ll index_son = b.son[i];
@@ -201,7 +201,7 @@ namespace lailai {
                     fileIndex.read(reinterpret_cast<char *>(&son), sizeof(Leave));
                     find_list_l(son, key, v);
                     ++i;
-                    if(!com(key,b.key[i].key))break;
+                    if(i>b.num||com(key,b.key[i].key))break;
                 }
             }
 
@@ -211,12 +211,12 @@ namespace lailai {
             Node n(key, value);
             KVblock pair_;
             //debug
-//            cout << "----root----" << endl;
-//            for(int i = 1;i <= root.num; ++i){
-//                cout << root.key[i].key << ' ';
-//            }
-//            cout << endl;
-//            cout << "-----------" << endl;
+            cout << "----root----" << endl;
+            for(int i = 1;i <= root.num; ++i){
+                cout << root.key[i].key << ' ';
+            }
+            cout << endl;
+            cout << "-----------" << endl;
             if (biinsert(root, n, index_root, pair_)) {//根节点的特判
 //                ++root.num;
 //                fileIndex.seekg(index_root);
@@ -265,6 +265,14 @@ namespace lailai {
         }
 
         bool biinsert(Block &b, const Node &key, const ll &now_index, KVblock &pair_) {//返回值表示下层是否裂块，这层需要添加键值。
+            //debug
+            cout << "-----insert block-------" << endl;
+            cout << b.num <<endl;
+            for(int i = 1; i <= b.num;++i){
+                cout << b.key[i].key<<' ';
+            }
+            cout << endl;
+            cout << "----------" << endl;
             if(b.num==0){//key个数为0
                 b.isbottom=true;
                 ++b.num;
@@ -292,10 +300,13 @@ namespace lailai {
 //            cout << endl;
             //返回对应key数组序号，son[index];
             ll son_index = b.son[index];
+            cout << "son-index "<<index << ' '<<son_index << endl;
             if (!b.isbottom) {//非叶子结点的父节点
                 Block bl;//todoxx
                 fileIndex.seekg(son_index);
                 fileIndex.read(reinterpret_cast<char *>(&bl), sizeof(Block));
+//                cout << "bl.num " << bl.num << endl;
+                cout << fileIndex.bad() << "qwq" << endl;
                 bl.fa.first=&b;
                 bl.fa.second=index;
                 if (biinsert(bl, key, son_index, pair_)) {
@@ -317,8 +328,8 @@ namespace lailai {
                         return false;
                     }
                 } else {
-                    fileIndex.seekg(son_index);
-                    fileIndex.write(reinterpret_cast<char *>(&bl), sizeof(Block));
+                    fileIndex.seekg(now_index);
+                    fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
                     return false;
                 }
 
@@ -327,7 +338,7 @@ namespace lailai {
                 KVleave pair;
                 fileIndex.seekg(son_index);
                 fileIndex.read(reinterpret_cast<char *>(&le), sizeof(Leave));//注意！这里将叶子节点读出来了，在leinsert函数当中写回文件
-                le.fa.first=b;
+                le.fa.first=&b;
                 le.fa.second=index;
 //                cout << "read" << le.num << endl;
                 if (leinsert(le, key, pair, son_index)) {//叶子裂块，儿子增加
@@ -340,15 +351,29 @@ namespace lailai {
                     }
                     b.key[index + 1] = pair.key;
                     b.son[index + 1] = pair.file_index;
+                    cout << "---spilit leave up block-------" << endl;
+                    for(int i =1; i <= b.num; ++i){
+                        cout << b.key[i].key<<' ';
+                    }
+                    cout << endl;
+                    cout << "-------" << endl;
+
                     if (b.num > BLOCK_SIZE) {
                         fileIndex.seekg(now_index);
                         fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
                         SpilitBlock(now_index, pair_);
                         return true;
-                    } else return false;
-                } else {//叶子未裂块，儿子不增加，没有裂块可能性
-                    fileIndex.seekg(son_index);
-                    fileIndex.write(reinterpret_cast<char *>(&le), sizeof(Leave));
+                    } else{
+                        cout << "now-index " << now_index << endl;
+                        cout << "b.num " << b.num << endl;
+                        fileIndex.seekg(now_index);
+                        fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
+//                        cout << fileIndex.bad() << "qwq" << endl;
+                        return false;
+                    }
+                } else {//叶子未裂块，儿子不增加，没有裂块可能性,但是key可能修改，所以写回
+                    fileIndex.seekg(now_index);
+                    fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
                     return false;
                 }
 //                    fileIndex.seekg(b.son[index+1]);
@@ -412,20 +437,23 @@ namespace lailai {
             int i;
             //debug
 //            cout << key.key << " key"<< endl;
-//            cout << "-----insert-leave----"<<endl;
-//            for(i = 1; i <= le.num; ++i)cout << le.array[i].key<<' ';
-//            cout << endl;
-//            cout << "---------" << endl;
+            cout << "-----insert-leave----"<<endl;
+            for(i = 1; i <= le.num; ++i)cout << le.array[i].key<<' ';
+            cout << endl;
+            cout << "---------" << endl;
             for(i = 0; i < le.num; ++i){
                 if(compare(key,le.array[i+1]))break;
             }
-            if(!compare(key,le.array[i])&&!compare(le.array[i],key))return false;
+            if(i&&!compare(key,le.array[i])&&!compare(le.array[i],key))return false;
             else{
                 ++le.num;
                 for(int j = le.num; j>i+1;--j){
                     le.array[j]=le.array[j-1];
                 }
                 le.array[i+1]=key;
+                if(!i){
+                    modify_father(le,key);
+                }
             }
             //-----插入结束-----是否裂块
             if (le.num > BLOCK_SIZE) {
@@ -438,48 +466,6 @@ namespace lailai {
                 fileIndex.write(reinterpret_cast<char *>(&le), sizeof(Leave));//重新写回文件
                 return false;
             }
-        }
-
-        bool lfind(const Leave &le, const K &key, ll &value) {
-            ll l = 1;
-            ll r = le.num;//数组key的大小
-            ll mid = (l + r) >> 1;
-            while (l < r) {
-                if (le.array[mid].key < key)l = mid + 1;
-                else r = mid;
-                mid = (l + r) >> 1;
-            }
-            if (le.array[l].key == key) {
-                value = le.array[l].index;
-                return true;
-            }
-            return false;
-        }
-
-        bool bifind(Block *&b, const K &key, ll &value) {
-            int i;
-            for (i = 0; i <= b->num - 1; ++i) {
-                if (compare(b->key[i + 1], key))continue;
-            }
-            if (b->isbottom) {
-                ll index = b->son[i];
-                fileIndex.seekg(index);
-                Leave lea;
-                fileIndex.read(reinterpret_cast<char *>(&lea), sizeof(Leave));
-                lea.fa.first = b;
-                lea.fa.second = i;
-                return lfind(lea, key, value);
-            }
-
-            ll index = b->son[i];
-            fileIndex.seekg(index);
-            Block bl;
-            fileIndex.read(reinterpret_cast<char *>(&bl), sizeof(Block));
-            bl.fa.first = b;
-            bl.fa.second = i;
-            b = &bl;
-            return bifind(b, key, value);
-
         }
 
         void get_one_child_r_b(Block &b, Block &r) {//if b is the first child
@@ -817,12 +803,13 @@ namespace lailai {
             fileIndex.close();
         };
 
-        bool Getone(const K &key, ll &value) {
-            return find(key, value);//value存储查找结果
-        }
+//        bool Getone(const K &key, ll &value) {
+//            return find(key, value);//value存储查找结果
+//        }
 
         void Get(const K &key, std::vector<ll> &v) {
             v.clear();
+
             find_list_b(root, key, v);
         }
 
