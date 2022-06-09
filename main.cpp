@@ -40,6 +40,9 @@ int x;
 //        cout << t <<"UU"<< endl;
         cin >> index;
         cout << "insert key " << x << endl;
+        if(x==49){
+
+        }
         bpt.Insert(x,index);
     }
     else if(s0[0]=='f'){

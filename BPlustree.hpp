@@ -47,8 +47,8 @@ namespace lailai {
             friend class BPT;
 
         private:
-            int nxt = -1;
-            int pre = -1;
+//            int nxt = -1;
+//            int pre = -1;
             int num = 0;
             std::pair<Block *, ll> fa;
             //read head and tail from array
@@ -280,7 +280,7 @@ namespace lailai {
                 b.key[1]=key;
                 b.son[0]=add_one_leave();
                 b.son[1]=add_one_leave();
-                r.pre=b.son[0];
+//                r.pre=b.son[0];
                 ++r.num;
                 r.array[r.num]=key;
                 fileIndex.seekg(now_index);
@@ -336,9 +336,12 @@ namespace lailai {
             } else {//是叶子节点的父节点
                 Leave le;
                 KVleave pair;
+                reset();
+                cout << son_index << "##\n";
                 fileIndex.seekg(son_index);
-                fileIndex.read(reinterpret_cast<char *>(&le), sizeof(Leave));//注意！这里将叶子节点读出来了，在leinsert函数当中写回文件
+                fileIndex.read(reinterpret_cast<char *>(&le), sizeof(Leave));
                 le.fa.first=&b;
+
                 le.fa.second=index;
 //                cout << "read" << le.num << endl;
                 if (leinsert(le, key, pair, son_index)) {//叶子裂块，儿子增加
@@ -359,15 +362,27 @@ namespace lailai {
                     cout << "-------" << endl;
 
                     if (b.num > BLOCK_SIZE) {
-                        fileIndex.seekg(now_index);
+                        fileIndex.seekp(now_index);
                         fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
                         SpilitBlock(now_index, pair_);
                         return true;
                     } else{
-                        cout << "now-index " << now_index << endl;
-                        cout << "b.num " << b.num << endl;
-                        fileIndex.seekg(now_index);
+//                        cout << "now-index " << now_index << endl;
+//                        cout << "b.num " << b.num << ' ' << now_index << endl;
+                        reset();
+                        fileIndex.seekp(now_index);
                         fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
+                        Block bb;
+//                        fileIndex.close();
+//                        fileIndex.open(file_name, ios::out | ios::in | ios::binary);
+                        fileIndex.seekg(now_index);
+                        fileIndex.read(reinterpret_cast<char *>(&bb), sizeof(Block));
+                        cout << "debug: " << now_index << endl;
+                        cout << bb.num << ' ';
+                        for(int i = 1; i <= bb.num; ++i){
+                            cout << bb.key[i].key << ' ';
+                        }
+                        cout << endl;
 //                        cout << fileIndex.bad() << "qwq" << endl;
                         return false;
                     }
@@ -383,7 +398,7 @@ namespace lailai {
         }
 
         void splitLeave(ll index, KVleave &pair) { //return new block's fileindex
-            Leave le, newle, block3;
+            Leave le, newle;
             fileIndex.seekg(index);//移动指针到指定位置
             fileIndex.read(reinterpret_cast<char *>(&le), sizeof(Leave));
             //debug
@@ -395,44 +410,22 @@ namespace lailai {
 //            cout << endl;
 //            cout << "-------"<<endl;
             pair.key = newle.array[1];
+            pair.file_index=add_one_leave();
             //修改元素数量
             newle.num = le.num - LEAVE_SPLIT_LEFT;
             le.num = LEAVE_SPLIT_LEFT;
             //本身是末位节点
-            if (le.nxt == -1) {
-                newle.pre = index;
-                newle.nxt = le.nxt;
-                le.nxt = add_one_leave();
                 //写入两个block
-                fileIndex.seekg(le.nxt);
+                fileIndex.seekg(pair.file_index);
                 fileIndex.write(reinterpret_cast<char *>(&newle), sizeof(Leave));
                 fileIndex.seekg(index);
                 fileIndex.write(reinterpret_cast<char *>(&le), sizeof(Leave));
-                pair.file_index = le.nxt;
-            }
                 //不是末位节点
-            else {
-                fileIndex.seekg(le.nxt);
-                fileIndex.read(reinterpret_cast<char *>(&block3), sizeof(Leave));
-                newle.nxt = le.nxt;
-                newle.pre = index;
-                block3.pre = add_one_leave();
-                le.nxt = block3.pre;
-                fileIndex.seekg(le.nxt);
-                fileIndex.write(reinterpret_cast<char *>(&newle), sizeof(Leave));
-                fileIndex.seekg(index);
-                fileIndex.write(reinterpret_cast<char *>(&le), sizeof(Leave));
-                fileIndex.seekg(newle.nxt);
-                fileIndex.write(reinterpret_cast<char *>(&block3), sizeof(Leave));
-                pair.file_index = le.nxt;
-            }
         };
 
         bool leinsert(Leave &le, const Node &key,
                       KVleave &pair, const ll &now_index) {//true = spilited
             //todo modify father
-//            ll index = bisearch_leave(le, key);//找到对应的kv对位置
-//            if (!compare(le.array[index], key) && !compare(key, le.array[index]))return false;//未裂块
             //----插入新的kv对
             int i;
             //debug
@@ -455,6 +448,10 @@ namespace lailai {
                     modify_father(le,key);
                 }
             }
+            cout << "-----insert-leave-after----"<<endl;
+            for(i = 1; i <= le.num; ++i)cout << le.array[i].key<<' ';
+            cout << endl;
+            cout << "---------" << endl;
             //-----插入结束-----是否裂块
             if (le.num > BLOCK_SIZE) {
                 fileIndex.seekg(now_index);
@@ -462,8 +459,15 @@ namespace lailai {
                 splitLeave(now_index, pair);
                 return true;//裂块
             } else {
+                reset();
+                cout << now_index<< "%%%";
                 fileIndex.seekg(now_index);
                 fileIndex.write(reinterpret_cast<char *>(&le), sizeof(Leave));//重新写回文件
+                Leave t;
+                fileIndex.seekg(now_index);
+                fileIndex.read(reinterpret_cast<char *>(&t), sizeof(Leave));//重新写回文件
+                cout << "de"<<endl;
+                cout << t.num << endl;
                 return false;
             }
         }
@@ -771,7 +775,7 @@ namespace lailai {
                 totalleave = 0;
                 fileIndex.write(reinterpret_cast<char *>(&totalleave), sizeof(int));
                 fileIndex.seekg(2 * sizeof(int));
-                index_root = 2 * sizeof(int) + sizeof(long long);
+                index_root = 2 * sizeof(int)+sizeof(ll);
                 fileIndex.write(reinterpret_cast<char *>(&index_root), sizeof(ll));
                 fileIndex.seekg(index_root);
                 fileIndex.write(reinterpret_cast<char *>(&root), sizeof(Block));
@@ -834,8 +838,9 @@ namespace lailai {
             remove(key);
             return true;
         }
-        void test_(){
-
+        void reset(){
+          //fileIndex.close();
+          //fileIndex.open(file_name,ios::in|ios::out|ios::binary);
         }
     };
 
