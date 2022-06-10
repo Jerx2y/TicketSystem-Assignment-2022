@@ -1,6 +1,5 @@
 #ifndef TRAINTICKET2022_BPLUSTREE_HPP
 #define TRAINTICKET2022_BPLUSTREE_HPP
-
 #include<fstream>
 #include<vector>
 //裂块 =5的时候，分裂成两个各有两个块的情况
@@ -14,12 +13,114 @@
 using ll = long long;
 using namespace ::std;
 namespace lailai {
+    template<class K,class S, class Compare = std::less<K>> class BPT;
     template<class K, class S, class Compare = std::less<K>>
+    class map{
+    private:
+        Compare compare;
+        fstream fileData;
+        const std::string file_name;
+        BPT<K,S> bpt;
+        struct Node{
+            K key_;
+            S value_;
+            ll index_;
+            Node (){}
+            Node (const K &key,const S &value,const ll &index){
+                key_ = key;
+                value_=value;
+                index_=index;
+            }
+        };
+        int totalNode;
+    public:
+        map(const std::string &file):bpt(file+"_index"),file_name(file+"_data"){
+            fileData.open(file_name, ios::out | ios::in | ios::binary);
+            if(!fileData.good()){
+                fileData.open(file_name, ios::out);
+                fileData.close();
+                fileData.open(file_name, ios::out | ios::in | ios::binary);
+                totalNode=0;
+                fileData.seekg(0);
+                fileData.write(reinterpret_cast<char *>(&totalNode), sizeof(int));
+            }
+            else{
+                fileData.seekg(0);
+                fileData.read(reinterpret_cast<char *>(&totalNode), sizeof(int));
+            }
+        }
+        ~map(){
+            fileData.seekg(0);
+            fileData.write(reinterpret_cast<char *>(&totalNode), sizeof(int));
+            fileData.close();
+        }
+
+        void Get(const K &key,std::vector<S> &v){
+            v.clear();
+            vector<ll> v_;
+            bpt.Get(key,v_);
+            for(auto i = v_.begin(); i!= v_.end();++i){
+                ll index = *i;
+                Node n;
+                fileData.seekg(index);
+                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
+                v.push_back(n);
+            }
+        }
+
+        bool Getone(const K &key, S &value){
+            vector<Node> v;
+            v.clear();
+            vector<ll> v_;
+            bpt.Get(key,v_);
+            for(auto i = v_.begin(); i!= v_.end();++i){
+                ll index = *i;
+                Node n;
+                fileData.seekg(index);
+                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
+                v.push_back(n);
+            }
+            if(v.empty())return false;
+            value = v[0];
+            return true;
+        }
+        ll add(const Node &n){
+            ++totalNode;
+            fileData.seekg(0);
+            fileData.write(reinterpret_cast<char *>(&totalNode), sizeof(int));
+            ll index = sizeof(Node)*(totalNode-1)+sizeof(int);
+            fileData.seekg(index);
+            fileData.write(reinterpret_cast<char *>(&n), sizeof(Node));
+            return index;
+        }
+        void Insert(const K &key,const S &value){
+           Node n(key,value);
+           ll index = add(n);
+           bpt.Insert(key,index);
+        }
+        bool Remove(const K &key, const S &value){
+            vector<ll> v;
+            bpt.Get(key,v);
+            if(v.empty())return false;
+            for(auto i = v.begin(); i != v.end(); ++i){
+                ll index = *i;
+                Node n;
+                fileData.seekg(index);
+                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
+                if(!compare(n.value_,value)&&!compare(n.value_,value)){
+                    BPT<K,S,std::less<K>>::Node n_(key,index);
+                    bpt.remove(n_);
+                    return true;
+                }
+            }
+           return false;
+        }
+    };
+    template<class K,class S,class Compare>
     class BPT {
         friend class Leave;
-
-    private:
-        //内嵌类
+        friend class map<K,S>;
+    public:
         class Node {//叶子节点内-块链-点
         public://维护第二关键字
             long long value;
@@ -35,6 +136,8 @@ namespace lailai {
             Node(const K &key_, const ll &value_) : value(value_), key(key_) {
             };
         };
+    private:
+        //内嵌类
 
         class Block {//树上节点
             friend class BPT;
@@ -70,6 +173,7 @@ namespace lailai {
             ll file_index = 0;
             Node key;
         };
+
         struct KVleave {
             ll file_index = 0;
             Node key;
@@ -131,6 +235,7 @@ namespace lailai {
             if (p == &root)return;
             p->fa.first->key[p->fa.second] = key;
         }
+
         bool find_one_block(const Node &n,const Block &b){
             if(!b.num)return false;
             int i;
@@ -520,17 +625,6 @@ namespace lailai {
             for(int i = b.fa.second; i <= b.fa.first->num; ++i){
                 b.fa.first->key[i] = b.fa.first->key[i + 1];
                 b.fa.first->son[i] = b.fa.first->son[i + 1];
-            }
-        }
-
-        void modify_father_b(const Block &b, const Node &key){
-            Block *p=&b;
-            while(p!=&root){
-                if(p->fa.second){
-                    p->fa.first->key[p->fa.second]=key;
-                    break;
-                }
-                p = p->fa.first;
             }
         }
 
@@ -963,18 +1057,18 @@ namespace lailai {
             find_list_b(root, key, v);
         }
 
+        bool Getone(const K &key,ll &value){
+           vector<ll> v;
+           v.clear();
+            find_list_b(root, key, v);
+            if(v.empty())return false;
+            value= v[0];
+            return true;
+        }
+
         void Insert(const K &key, const ll &value) {
             insert(key, value);
         }
-
-//        void Set(const K &key, ll &value) {
-//            if (find(key, value)) {
-//                remove(key);
-//                insert(key, value);
-//            } else {
-//                insert(key, value);
-//            }
-//        }
 
         bool Remove(const K &key,ll value) {
             Node n(key,value);
