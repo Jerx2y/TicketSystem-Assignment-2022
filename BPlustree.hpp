@@ -5,10 +5,12 @@
 #include<vector>
 //裂块 =5的时候，分裂成两个各有两个块的情况
 //并块 =2的时候，与左儿子或者右儿子并块
-#define BLOCK_SIZE 4
-#define LEAVE_SIZE 4
-#define LEAVE_SPLIT_LEFT 2
+#define BLOCK_SIZE 10
+#define LEAVE_SIZE 10
+#define BLOCK_SPLIT_LEFT 5
+#define LEAVE_SPLIT_LEFT 5
 #define LEAVE_MIN 3
+#define BLOCK_MIN 3
 using ll = long long;
 using namespace ::std;
 namespace lailai {
@@ -77,10 +79,6 @@ namespace lailai {
 
         std::fstream fileIndex;
 
-        std::fstream reuse_block;
-
-        std::fstream reuse_leave;
-
         Block root;
 
         Compare com;
@@ -103,12 +101,6 @@ namespace lailai {
         void recycle_block(ll index) {}
 
         ll add_one_leave() {//提供内存地址
-//            fileIndex.seekg(0);
-//            fileIndex.read(reinterpret_cast<char *>(&totalblock), sizeof(int));
-//            cout << totalblock << "%%" << endl;
-//            fileIndex.seekg(sizeof(int));
-//            fileIndex.read(reinterpret_cast<char *>(&totalleave), sizeof(int));
-//            cout << totalleave << "%%" << endl;
             ll index = totalblock * sizeof(Block) + totalleave * sizeof(Leave) + 2 * sizeof(int) + sizeof(ll);
             ++totalleave;
             fileIndex.seekg(sizeof(int));
@@ -117,10 +109,6 @@ namespace lailai {
         }
 
         ll add_one_block() {
-//            fileIndex.seekg(0);
-//            fileIndex.read(reinterpret_cast<char *>(&totalblock), sizeof(int));
-//            fileIndex.seekg(sizeof(int));
-//            fileIndex.read(reinterpret_cast<char *>(&totalleave), sizeof(int));
             ll index = totalblock * sizeof(Block) + totalleave * sizeof(Leave) + 2 * sizeof(int) + sizeof(ll);
             ++totalblock;
             fileIndex.seekg(0);
@@ -143,8 +131,39 @@ namespace lailai {
             if (p == &root)return;
             p->fa.first->key[p->fa.second] = key;
         }
-
-
+        bool find_one_block(const Node &n,const Block &b){
+            if(!b.num)return false;
+            int i;
+            for(i = 0; i < b.num; ++i){
+                if(compare(n,b.key[i+1]))break;
+            }
+            if(b.isbottom){
+                ll son_index = b.son[i];
+                fileIndex.seekg(son_index);
+                Leave son;
+                fileIndex.read(reinterpret_cast<char *>(&son), sizeof(Leave));
+                return find_one_leave(n,son);
+            }
+            else{
+                ll son_index = b.son[i];
+                fileIndex.seekg(son_index);
+                Block son;
+                fileIndex.read(reinterpret_cast<char *>(&son), sizeof(Block));
+                return find_one_block(n,son);
+            }
+        }
+        bool find_one_leave(const Node &n, const Leave &l){
+            if(!l.num)return false;
+            int i;
+            for( i = 0; i < l.num; ++i){
+                if(compare(n,l.array[i+1]))break;
+            }
+            if(!compare(n,l.array[i])&&!compare(l.array[i],n))return true;
+            return false;
+        }
+        bool find_one(const Node &n){
+            return find_one_block(n,root);
+        }
         void find_list_l(const Leave &le, const K &key, std::vector<ll> &v) {
             for (int i = 1; i <= le.num; ++i) {
                 if (!com(le.array[i].key, key) && !com(key, le.array[i].key))v.push_back(le.array[i].value);
@@ -157,7 +176,7 @@ namespace lailai {
 //                cout << "&&" << endl;
                 int i;
                 for (i = 0; i < b.num; ++i) {
-                    if (com(key, b.key[i + 1].key) || !com(key, b.key[i + 1].key) && !com(b.key[i + 1].key, key))
+                    if (comp(key, b.key[i + 1].key) || !compare(key, b.key[i + 1].key) && !compare(b.key[i + 1], key))
                         break;//下一个位置关键字大于等于
                 }
                 while (i <= b.num) {
@@ -167,7 +186,7 @@ namespace lailai {
                     fileIndex.read(reinterpret_cast<char *>(&son), sizeof(Block));
                     find_list_b(son, key, v);
                     ++i;
-                    if (i > b.num || com(key, b.key[i].key))break;//新的位置关键字大于key
+                    if (i > b.num || compare(key, b.key[i]))break;//新的位置关键字大于key
                 }
             } else {
                 int i;
@@ -217,16 +236,16 @@ namespace lailai {
             Block b, newb;
             fileIndex.seekg(index);//移动指针到指定位置
             fileIndex.read(reinterpret_cast<char *>(&b), sizeof(Block));
-            for (int i = LEAVE_SPLIT_LEFT + 2; i <= b.num; ++i) {//复制过程
+            for (int i = BLOCK_SPLIT_LEFT + 2; i <= b.num; ++i) {//复制过程
                 newb.key[i - LEAVE_SPLIT_LEFT - 1] = b.key[i];
             }
-            for (int i = LEAVE_SPLIT_LEFT + 1; i <= b.num + 1; ++i) {//复制过程
+            for (int i = BLOCK_SPLIT_LEFT + 1; i <= b.num + 1; ++i) {//复制过程
                 newb.son[i - LEAVE_SPLIT_LEFT - 1] = b.son[i];
             }
-            pair.key = b.key[LEAVE_SPLIT_LEFT + 1];
+            pair.key = b.key[BLOCK_SPLIT_LEFT + 1];
             //修改元素数量
-            newb.num = b.num - LEAVE_SPLIT_LEFT - 1;
-            b.num = LEAVE_SPLIT_LEFT;
+            newb.num = b.num - BLOCK_SPLIT_LEFT - 1;
+            b.num = BLOCK_SPLIT_LEFT;
             newb.isbottom = b.isbottom;
             ll new_index = add_one_block();
             fileIndex.seekg(new_index);
@@ -424,7 +443,7 @@ namespace lailai {
 //            cout << endl;
 //            cout << "---------" << endl;
             //-----插入结束-----是否裂块
-            if (le.num > BLOCK_SIZE) {
+            if (le.num > LEAVE_SIZE) {
                 fileIndex.seekg(now_index);
                 fileIndex.write(reinterpret_cast<char *>(&le), sizeof(Leave));
                 splitLeave(now_index, pair);
@@ -475,7 +494,7 @@ namespace lailai {
         void merge_r_b(Block &b, Block &r) {
             b.key[b.num+1]=b.fa.first->key[1];
             for (int i = b.num + 2; i <= b.num + r.num+1; ++i) {
-                b.key[i] = r.key[i - b.num];
+                b.key[i] = r.key[i - b.num-1];
             }
             for (int i = b.num + 1; i <= b.num + r.num + 1; ++i) {
                 b.son[i] = r.son[i - b.num - 1];
@@ -491,7 +510,7 @@ namespace lailai {
         void merge_l_b(Block &b, Block &l) {
             l.key[l.num+1]=b.fa.first->key[b.fa.second];
             for (int i = l.num + 2; i <= b.num + l.num+1; ++i) {
-                l.key[i] = b.key[i - l.num];
+                l.key[i] = b.key[i - l.num-1];
             }
             for (int i = l.num + 1; i <= b.num + l.num + 1; ++i) {
                 l.son[i] = b.son[i - l.num - 1];
@@ -503,6 +522,7 @@ namespace lailai {
                 b.fa.first->son[i] = b.fa.first->son[i + 1];
             }
         }
+
         void modify_father_b(const Block &b, const Node &key){
             Block *p=&b;
             while(p!=&root){
@@ -513,7 +533,12 @@ namespace lailai {
                 p = p->fa.first;
             }
         }
+
         bool biremove(Block &b, const K &key, ll now_index) {//true说明key值减少
+            //debug
+//            cout << "remove-BLOCK" << endl;
+//            for(int j = 1; j <= b.num; ++j)cout << b.key[j].key <<' ';
+//            cout << "\n----------"<<endl;
             int i;
             for (i = 0; i < b.num; ++i) {
                 if(com(key,b.key[i+1].key))break;
@@ -532,13 +557,13 @@ namespace lailai {
                 } else {
                     fileIndex.seekg(now_index);
                     fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
-                    if (b.num < LEAVE_MIN) {
+                    if (b.num < BLOCK_MIN) {
                         if (!b.fa.second) {//处理右邻居
                             ll bro_index = b.fa.first->son[1];
                             Block bro;
                             fileIndex.seekg(bro_index);
                             fileIndex.read(reinterpret_cast<char *>(&bro), sizeof(Block));
-                            if (bro.num > LEAVE_MIN) {
+                            if (bro.num > BLOCK_MIN) {
                                 get_one_child_r_b(b, bro);
                                 fileIndex.seekg(now_index);
                                 fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
@@ -557,7 +582,7 @@ namespace lailai {
                             Block bro_l;
                             fileIndex.seekg(bro_index);
                             fileIndex.read(reinterpret_cast<char *>(&bro_l), sizeof(Block));
-                            if (bro_l.num > LEAVE_MIN) {
+                            if (bro_l.num > BLOCK_MIN) {
                                 get_one_child_l_b(b, bro_l);
                                 fileIndex.seekg(now_index);
                                 fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
@@ -587,15 +612,18 @@ namespace lailai {
                     fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
                     return false;
                 } else {//调整中间节点
+
                     fileIndex.seekg(now_index);
                     fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
-                    if (b.num < LEAVE_MIN) {
+                    if (b.num < BLOCK_MIN) {
+//                        cout << "YES" << endl;
                         if (!b.fa.second) {//合并右邻居
                             ll bro_index = b.fa.first->son[1];
                             Block bro;
                             fileIndex.seekg(bro_index);
                             fileIndex.read(reinterpret_cast<char *>(&bro), sizeof(Block));
-                            if (bro.num > LEAVE_MIN) {
+                            if (bro.num > BLOCK_MIN) {
+//                                cout << "GET_ONE_CHILD_LBLOCK" << endl;
                                 get_one_child_r_b(b, bro);
                                 fileIndex.seekg(now_index);
                                 fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
@@ -603,6 +631,7 @@ namespace lailai {
                                 fileIndex.write(reinterpret_cast<char *>(&bro), sizeof(Block));
                                 return true;
                             } else {
+//                                cout << "MERGE_RIGHT_BLOCK" << endl;
                                 merge_r_b(b, bro);
                                 fileIndex.seekg(now_index);
                                 fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
@@ -610,18 +639,23 @@ namespace lailai {
                                 return true;
                             }
                         } else {//合并左邻居
-                            ll bro_index = b.fa.first->son[b.fa.second];
+                            ll bro_index = b.fa.first->son[b.fa.second-1];
                             Block bro_l;
                             fileIndex.seekg(bro_index);
                             fileIndex.read(reinterpret_cast<char *>(&bro_l), sizeof(Block));
-                            if (bro_l.num > LEAVE_MIN) {
+                            if (bro_l.num > BLOCK_MIN) {
+//                                cout << "GET_LEFT_BLOCK" << endl;
                                 get_one_child_l_b(b, bro_l);
                                 fileIndex.seekg(now_index);
                                 fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
                                 fileIndex.seekg(bro_index);
                                 fileIndex.write(reinterpret_cast<char *>(&bro_l), sizeof(Block));
-                                return true;
+                                return false;
                             } else {
+//                                cout << "-----BLOCK----" << endl;
+//                                for(int j =1; j<= bro_l.num;++j)cout << bro_l.key[j].key << ' ';
+//                                cout << "\n--------" << endl;
+//                                cout << "MERGE_LEFT_BLOCK" << endl;
                                 merge_l_b(b, bro_l);
                                 fileIndex.seekg(bro_index);
                                 fileIndex.write(reinterpret_cast<char *>(&bro_l), sizeof(Block));
@@ -641,15 +675,15 @@ namespace lailai {
             for (int i = 1; i <= rle.num; ++i) {
                 rle.array[i] = rle.array[i + 1];
             }
+            le.fa.first->key[le.fa.second+1]=rle.array[1];
         }
 
         void get_one_child_l(Leave &le, Leave &lle) {
             le.num++;
             lle.num--;
-            le.array[le.num] = lle.array[1];
-            for (int i = 1; i <= lle.num; ++i) {
-                lle.array[i] = lle.array[i + 1];
-            }
+            for(int i = le.num; i > 1; --i)le.array[i]=le.array[i-1];
+            le.array[1]=lle.array[lle.num+1];
+            le.fa.first->key[le.fa.second]=le.array[1];
         }
 
         void merge_r(Leave &le, Leave &rle) {
@@ -658,6 +692,11 @@ namespace lailai {
                 le.array[i] = rle.array[i - le.num];
             }
             le.num += rle.num;
+            --le.fa.first->num;
+            for (int j = le.fa.second+1; j <= le.fa.first->num; ++j) {
+                le.fa.first->key[j] = le.fa.first->key[j + 1];
+                le.fa.first->son[j]=le.fa.first->son[j+1];
+            }
         }
 
         void merge_l(Leave &le, Leave &lle) {
@@ -666,12 +705,16 @@ namespace lailai {
                 lle.array[i] = le.array[i - lle.num];
             }
             lle.num += le.num;
+            --le.fa.first->num;
+            for (int j = le.fa.second; j <= le.fa.first->num; ++j) {
+                le.fa.first->key[j] = le.fa.first->key[j + 1];
+                le.fa.first->son[j] = le.fa.first->son[j + 1];
+            }
         }
 
         bool leremove(Leave &l, const K &key, ll now_index) {//true:fa内容被修改，false：fa内容未被修改
 //debug
 //            cout << "-----remove-leave----"<<endl;
-//            cout << now_index << endl;
 //            for(int j = 1; j <= l.num; ++j)cout << l.array[j].key<<' ';
 //            cout << endl;
 //            cout << "---------" << endl;
@@ -730,8 +773,8 @@ namespace lailai {
                     fileIndex.seekg(bro_index);
                     fileIndex.read(reinterpret_cast<char *>(&bro_l), sizeof(Leave));
                     if (bro_l.num > LEAVE_MIN) {
+//                        cout << "GETONELEFT" << endl;
                         get_one_child_l(l, bro_l);
-                        l.fa.first->key[l.fa.second]=l.array[1];
 //                        modify_father(l,bro_l.array[bro_l.num+1]);
                         fileIndex.seekg(bro_index);
                         fileIndex.write(reinterpret_cast<char *>(&bro_l), sizeof(Leave));
@@ -739,26 +782,29 @@ namespace lailai {
                         fileIndex.write(reinterpret_cast<char *>(&l), sizeof(Leave));
                         return false;//
                     } else if(bro_l.num) {
+//                        cout << "MERGE_LEFT_LEAVE" << endl;
                         merge_l(l, bro_l);
                         fileIndex.seekg(bro_index);
                         fileIndex.write(reinterpret_cast<char *>(&bro_l), sizeof(Leave));
                         recycle_leave(now_index);
-                        --l.fa.first->num;
-                        for (int j = l.fa.second; j <= l.fa.first->num; ++j) {
-                            l.fa.first->key[j] = l.fa.first->key[j + 1];
-                            l.fa.first->son[j] = l.fa.first->son[j + 1];
-                        }
                         return true;
                     }
                     else{//如果左叶子结点是空的,则与右邻居合并，块
-                        cout << "empty" << endl;
+                        if(l.fa.first->num==1){//不存在右邻居的情况
+                            fileIndex.seekg(now_index);
+                            fileIndex.write(reinterpret_cast<char *>(&l), sizeof(Leave));
+                            if(!l.num)return true;
+                            return false;
+                        }
+//                        cout << "empty" << endl;
+//根节点特判
                         Leave bro_r;
                         bro_index = l.fa.first->son[l.fa.second+1];
                         fileIndex.seekg(bro_index);
                         fileIndex.read(reinterpret_cast<char *>(&bro_r), sizeof(Leave));
+//                        cout << bro_r.array[1].key<<' '<<bro_r.num<<' '<< "%%"<<endl;
                         if(bro_r.num>LEAVE_MIN){//借
                             get_one_child_r(l,bro_r);
-                            l.fa.first->key[l.fa.second+1]=bro_r.array[1];
                             fileIndex.seekg(bro_index);
                             fileIndex.write(reinterpret_cast<char *>(&bro_r), sizeof(Leave));
                             fileIndex.seekg(now_index);
@@ -770,11 +816,6 @@ namespace lailai {
                             fileIndex.seekg(now_index);
                             fileIndex.write(reinterpret_cast<char *>(&l), sizeof(Leave));
                             recycle_leave(bro_index);
-                            --l.fa.first->num;
-                            for (int j = l.fa.second; j <= l.fa.first->num; ++j) {
-                                l.fa.first->key[j] = l.fa.first->key[j + 1];
-                                l.fa.first->son[j]=l.fa.first->son[j+1];
-                            }
                             return true;
 
                         }
@@ -797,6 +838,11 @@ namespace lailai {
             for(i = 0; i<root.num; ++i){
                 if(com(key_,root.key[i+1].key))break;
             }
+            //debug
+//            cout <<"---root----"<< endl;
+//            for(int j = 1; j <= root.num; ++j ) cout << root.key[j].key << ' ';
+//            cout << "\n-------" << endl;
+//            cout << "root :" << root.key[1].key << endl;
             if(root.isbottom){
                 Leave son;
                 ll index_son = root.son[i];
@@ -805,7 +851,7 @@ namespace lailai {
                 son.fa.first=&root;
                 son.fa.second=i;
                 if(leremove(son,key_,index_son)){
-                    if(!root.num){
+                    if(!root.num){//合并只剩下一个儿子
                         Leave l,r;
                         fileIndex.seekg(root.son[0]);
                         fileIndex.read(reinterpret_cast<char *>(&l), sizeof(Leave));
@@ -813,7 +859,7 @@ namespace lailai {
 //                            fileIndex.seekg(index_root);
 //                            fileIndex.write(reinterpret_cast<char *>(&root), sizeof(Block));
 //                        }
-                        if(l.num){
+                        if(l.num){//左儿子取空叶子结点
                             ll index;
                             ++root.num;
                             root.son[1]=root.son[0];
@@ -821,6 +867,16 @@ namespace lailai {
                             root.key[1]=l.array[1];
                             fileIndex.seekg(index);
                             fileIndex.write(reinterpret_cast<char *>(&r), sizeof(Leave));
+                        }
+                    }
+                    else{
+                        Leave r;
+                        fileIndex.seekg(root.son[1]);
+                        fileIndex.read(reinterpret_cast<char *>(&r), sizeof(Leave));
+                        if(!r.num){
+                            recycle_leave(root.son[0]);
+                            recycle_leave(root.son[1]);
+                            root.num=0;
                         }
                     }
                 }
@@ -844,6 +900,10 @@ namespace lailai {
 
                 }
             }
+            //debug
+//            cout <<"---root write---" <<endl;
+//            cout << root.num;
+//            cout <<
             fileIndex.seekg(index_root);
             fileIndex.write(reinterpret_cast<char *>(&root), sizeof(Block));
         }
@@ -916,12 +976,10 @@ namespace lailai {
 //            }
 //        }
 
-        bool Remove(const K &key) {
-            vector<ll> v;
-            v.clear();
-            find_list_b(root, key, v);
-            if (v.empty())return false;
-            remove(key);
+        bool Remove(const K &key,ll value) {
+            Node n(key,value);
+            if(!find_one(n))return false;
+            remove(n);
             return true;
         }
 

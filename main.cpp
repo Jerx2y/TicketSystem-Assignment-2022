@@ -26,12 +26,12 @@ int main() {
     freopen("my.out","w",stdout);
 int n;
 cin >> n;
-lailai::BPT<int,int> bpt("totalleave");
+lailai::BPT<ll,int> bpt("totalleave");
 for(int i = 1; i <= n; ++i){
     string s0;
     cin >> s0;
     if(s0[0]=='i'){
-int x;
+ll x;
         cin >> x;
         ll index;
         cin >> index;
@@ -39,7 +39,7 @@ int x;
     }
     else if(s0[0]=='f'){
         vector<ll> v;
-        int s;
+        ll s;
         cin >> s;
         bpt.Get(s,v);
         if(v.empty())cout << "null"<< endl;
@@ -51,9 +51,10 @@ int x;
         }
     }
     else if(s0[0]=='d'){
-        int s;
-        cin >> s;
-        bpt.Remove(s);
+        ll s,s1;
+        cin >> s >> s1;
+//        cout << "remove :" << s << endl;
+        bpt.Remove(s,s1);
     }
 
 }
