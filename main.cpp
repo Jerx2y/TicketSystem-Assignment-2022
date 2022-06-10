@@ -20,11 +20,11 @@ struct test{
     test(){}
 };
 int main() {
-    freopen("5.in","r",stdin);
-    freopen("my.out","w",stdout);
+//    freopen("5.in","r",stdin);
+//    freopen("my.out","w",stdout);
 int n;
 cin >> n;
-lailai::BPT<test,ll> bpt("totalleave");
+lailai::map<test,ll> map("database");
 for(int i = 1; i <= n; ++i){
     string s0;
     cin >> s0;
@@ -35,14 +35,14 @@ for(int i = 1; i <= n; ++i){
         strcpy(t.x,s.c_str());
         ll index;
         cin >> index;
-        bpt.Insert(t,index);
+        map.Insert(t,index);
     }
     else if(s0[0]=='f'){
         vector<ll> v;
         string s;
         cin >> s;
         strcpy(t.x,s.c_str());
-        bpt.Get(t,v);
+        map.Get(t,v);
         if(v.empty())cout << "null"<< endl;
         else {
             for(auto j = v.begin(); j!= v.end(); ++j){
@@ -57,7 +57,7 @@ for(int i = 1; i <= n; ++i){
         cin >> s >> s1;
         strcpy(t.x,s.c_str());
 //        cout << "remove :" << s << endl;
-        bpt.Remove(t,s1);
+        map.Remove(t,s1);
     }
 
 }
