@@ -20,11 +20,11 @@ struct test{
     test(){}
 };
 int main() {
-//    freopen("my.in","r",stdin);
-//    freopen("my.out","w",stdout);
+    freopen("5.in","r",stdin);
+    freopen("my.out","w",stdout);
 int n;
 cin >> n;
-lailai::BPT<test> bpt("totalleave");
+lailai::BPT<test,ll> bpt("totalleave");
 for(int i = 1; i <= n; ++i){
     string s0;
     cin >> s0;
