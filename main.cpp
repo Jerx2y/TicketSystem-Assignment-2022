@@ -3,7 +3,7 @@
 #include<cstdio>
 #include"BPlustree.hpp"
 struct test{
-    char x[65];
+    char x[66];
     void operator =(const test &y){
         strcpy(x,y.x);
     }
@@ -20,28 +20,29 @@ struct test{
     test(){}
 };
 int main() {
-    const ll l =92233720368547758;
-//    freopen("1.in","r",stdin);
     freopen("my.in","r",stdin);
     freopen("my.out","w",stdout);
 int n;
 cin >> n;
-lailai::BPT<ll,int> bpt("totalleave");
+lailai::BPT<test,int> bpt("totalleave");
 for(int i = 1; i <= n; ++i){
     string s0;
     cin >> s0;
+    test t;
     if(s0[0]=='i'){
-ll x;
-        cin >> x;
+        string s;
+        cin >> s;
+        strcpy(t.x,s.c_str());
         ll index;
         cin >> index;
-        bpt.Insert(x,index);
+        bpt.Insert(t,index);
     }
     else if(s0[0]=='f'){
         vector<ll> v;
-        ll s;
+        string s;
         cin >> s;
-        bpt.Get(s,v);
+        strcpy(t.x,s.c_str());
+        bpt.Get(t,v);
         if(v.empty())cout << "null"<< endl;
         else {
             for(auto j = v.begin(); j!= v.end(); ++j){
@@ -51,12 +52,14 @@ ll x;
         }
     }
     else if(s0[0]=='d'){
-        ll s,s1;
+        ll s1;
+        string s;
         cin >> s >> s1;
+        strcpy(t.x,s.c_str());
 //        cout << "remove :" << s << endl;
-        bpt.Remove(s,s1);
+        bpt.Remove(t,s1);
     }
 
 }
-cout << remove("totalleave")<< endl;
+//cout << remove("totalleave")<< endl;
 }

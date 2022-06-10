@@ -176,7 +176,7 @@ namespace lailai {
 //                cout << "&&" << endl;
                 int i;
                 for (i = 0; i < b.num; ++i) {
-                    if (comp(key, b.key[i + 1].key) || !compare(key, b.key[i + 1].key) && !compare(b.key[i + 1], key))
+                    if (com(key, b.key[i + 1].key) || !com(key, b.key[i + 1].key) && !com(b.key[i + 1].key, key))
                         break;//下一个位置关键字大于等于
                 }
                 while (i <= b.num) {
@@ -186,7 +186,7 @@ namespace lailai {
                     fileIndex.read(reinterpret_cast<char *>(&son), sizeof(Block));
                     find_list_b(son, key, v);
                     ++i;
-                    if (i > b.num || compare(key, b.key[i]))break;//新的位置关键字大于key
+                    if (i > b.num || com(key, b.key[i].key))break;//新的位置关键字大于key
                 }
             } else {
                 int i;
@@ -534,14 +534,14 @@ namespace lailai {
             }
         }
 
-        bool biremove(Block &b, const K &key, ll now_index) {//true说明key值减少
+        bool biremove(Block &b, const Node &key, ll now_index) {//true说明key值减少
             //debug
 //            cout << "remove-BLOCK" << endl;
 //            for(int j = 1; j <= b.num; ++j)cout << b.key[j].key <<' ';
 //            cout << "\n----------"<<endl;
             int i;
             for (i = 0; i < b.num; ++i) {
-                if(com(key,b.key[i+1].key))break;
+                if(compare(key,b.key[i+1]))break;
             }
             ll index_son = b.son[i];
             if (!b.isbottom) {
@@ -712,7 +712,7 @@ namespace lailai {
             }
         }
 
-        bool leremove(Leave &l, const K &key, ll now_index) {//true:fa内容被修改，false：fa内容未被修改
+        bool leremove(Leave &l, const Node &key, ll now_index) {//true:fa内容被修改，false：fa内容未被修改
 //debug
 //            cout << "-----remove-leave----"<<endl;
 //            for(int j = 1; j <= l.num; ++j)cout << l.array[j].key<<' ';
@@ -720,7 +720,7 @@ namespace lailai {
 //            cout << "---------" << endl;
             int i;
             for(i = 0; i < l.num; ++i){
-                if(com(key,l.array[i+1].key))break;
+                if(compare(key,l.array[i+1]))break;
             }
             for (int j = i; j < l.num; ++j) {
                 l.array[j] = l.array[j + 1];
@@ -832,11 +832,11 @@ namespace lailai {
 
         }
 
-        void remove(const K &key_) {//确定存在的情况下
+        void remove(const Node &key_) {//确定存在的情况下
 //            Node key(key_, 1);
             int i;
             for(i = 0; i<root.num; ++i){
-                if(com(key_,root.key[i+1].key))break;
+                if(compare(key_,root.key[i+1]))break;
             }
             //debug
 //            cout <<"---root----"<< endl;
