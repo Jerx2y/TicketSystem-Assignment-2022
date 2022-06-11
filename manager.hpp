@@ -288,6 +288,7 @@ public:
         transferTrain ans;
         ans.first = INF;
 
+
         for (int i = 0; i < strain.size(); ++i) {
             Date startDay(((today.now + (strain[i].startTime + strain[i].leaveTime) % 1440 - strain[i].leaveTime) / 1440) * 1440); // 车 1 从始发站发车的日期
             if (startDay < strain[i].startDate || strain[i].endDate < startDay) continue;
@@ -299,11 +300,13 @@ public:
                 const auto &tt = train_.at(ttrain[i].trainIDhash);
                 const int &ti = ttrain[i].idx;
 
+
                 for (int sk = si + 1; sk < st.stationNum; ++sk)
                     for (int tk = 0; tk < ti; ++tk) {
                         if (strcmp(st.stationID[sk], tt.stationID[tk]))
                             continue;
                         
+
                         Date transfer = startDay + st.startTime + st.arriveTime[sk]; // 到达中转站的时间
                     
                         Date startDay2((transfer.now / 1440 * 1440 + (tt.startTime + tt.leaveTime[ti]) % 1440 - tt.leaveTime[ti]) / 1440 * 1440); // 车 2 从始发站发车的日期
@@ -314,7 +317,7 @@ public:
                         
                         transferTrain tmp;
                         tmp.arrive1 = transfer;
-                        tmp.arrive2 = startDay2 + tt.startTime + st.arriveTime[ti];
+                        tmp.arrive2 = startDay2 + tt.startTime + tt.arriveTime[ti];
                         tmp.cost1 = st.prices[sk] - st.prices[si];
                         tmp.cost2 = tt.prices[ti] - tt.prices[tk];
                         tmp.day1 = startDay;
@@ -335,7 +338,7 @@ public:
                             std::swap(tmp.first, tmp.second);
                         
                         if (tmp < ans)
-                            tmp = ans;
+                            ans = tmp;
                     }
             }
         }
@@ -495,6 +498,9 @@ public:
         return "okk";
     }
 
+    void offline() {
+        online.clear();
+    }
 };
 
 #endif

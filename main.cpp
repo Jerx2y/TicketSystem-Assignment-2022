@@ -7,11 +7,12 @@ int main() {
 
     std::string opt, timestamp;
     Cmd info;
-    Manager sys;
+    static Manager sys;
     while (readline(opt, timestamp, info)) {
         std::string result;
 
-        cout << timestamp << ' ';
+        if (opt != "offline")
+            cout << timestamp << ' ';
 
         if (opt == "add_user")
             result = sys.add_user(info);
@@ -45,6 +46,9 @@ int main() {
             result = sys.clear();
         if (opt == "exit")
             return std::cout << "bye" << std::endl, 0;
+        
+        if (opt == "offline")
+            sys.offline(), result = "okk";
         
         if (result != "okk")
             // std::cout << result << std::endl; 
