@@ -86,6 +86,9 @@ public:
     int getseat(int x) {
         return ticket[x];
     }
+    bool operator<(const dayTrain &rhs) const {
+        return false;
+    }
 };
 
 // 经过这个站的火车信息，避免在 query_ticket 时读取整个 train 结构体

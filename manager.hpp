@@ -9,6 +9,7 @@
 #include "order.hpp"
 #include "linked_hashmap.hpp"
 #include "utils.hpp"
+#include "BPlustree.hpp"
 
 // TODO
 #include <vector>
@@ -22,24 +23,36 @@ class Manager {
 private:
     linked_hashmap<std::string, int> online;
     // TODO:
-    std::map<Varchar, User> user_; // idx
-    std::map<Varchar, Train> train_;
-    std::map<std::pair<Varchar, Date>, dayTrain> daytrain_;
-    std::map<int, Order> order_;
-    std::multimap<Varchar, stationTrain> stationtrain_;
-    std::multimap<std::pair<Varchar, Date>, int> pending_order_;
-    std::multimap<Varchar, int> user_order_;
+    lailai::map<Varchar, User> user_;
+    lailai::map<Varchar, Train> train_;
+    lailai::map<std::pair<Varchar, Date>, dayTrain> daytrain_;
+    lailai::map<int, Order> order_;
+    lailai::map<Varchar, stationTrain> stationtrain_;
+    lailai::map<std::pair<Varchar, Date>, int> pending_order_;
+    lailai::map<Varchar, int> user_order_;
 
-    int ordercnt;
+    int ordercnt, usercnt;
 
 public:
 
-    Manager() {
+    Manager() : user_("user"),
+                train_("train"),
+                daytrain_("daytrain"),
+                order_("order"),
+                stationtrain_("stationtrain"),
+                pending_order_("pendingorder"),
+                user_order_("userorder") {
         ordercnt = 0; // TODO read file !!!
+        usercnt = 0;
+    }
+
+    ~Manager() {
+        ordercnt; // TODO
+        usercnt; // TODO
     }
 
     std::string add_user(Cmd info) {
-        bool isfirst = user_.empty();
+        bool isfirst = !usercnt;
         if (!isfirst && !online.count(info.get('c')))
             return "add_user: user is not online";
         if (!isfirst && online.at(info.get('c')) <= strtoint(info.get('g')))
@@ -52,8 +65,10 @@ public:
             info.set('g', "10");
 
         User tmp(info);
-        user_[info.get('u')] = tmp;
+        user_.Insert(Varchar(info.get('u')), tmp);
         cout << '0' << endl;
+        
+        usercnt++;
 
         return "okk";
     }
@@ -64,7 +79,8 @@ public:
         if (!user_.count(Varchar(info.get('u'))))
             return "login: user do not exist";
 
-        User tmp = user_.at(Varchar(info.get('u')));
+        User tmp;
+        user_.Getone(Varchar(info.get('u')), tmp);
         if (std::hash<std::string>()(info.get('p')) != tmp.passwordHash)
             return "login: password wrong";
 
@@ -90,7 +106,8 @@ public:
             return "query_profile: user-u do not exist";
 
         int p = online.at(info.get('c'));
-        const User &tmp = user_.at(Varchar(info.get('u')));
+        User tmp;
+        user_.Getone(Varchar(info.get('u')), tmp);
     
         if (!(tmp.privilege < p || (tmp.privilege == p && info.get('u') == info.get('c'))))
             return "query_profile: have not premission";
@@ -110,7 +127,8 @@ public:
         if (info.have('g') && strtoint(info.get('g')) >= p)
             return "modify_profile: can not give more previlege, i.e. " + tod2(p) + " can not give " + info.get('g');
 
-        User tmp = user_.at(Varchar(info.get('u')));
+        User tmp;
+        user_.Getone(Varchar(info.get('u')), tmp);
 
         if (!(tmp.privilege < p || (tmp.privilege == p && info.get('u') == info.get('c'))))
             return "modify_profile: have not premission";
@@ -120,7 +138,7 @@ public:
         if (info.have('m')) strcpy(tmp.mailAddr, info.get('m').c_str());
         if (info.have('g')) tmp.privilege = strtoint(info.get('g'));
 
-        user_[Varchar(info.get('u'))] = tmp;
+        user_.Modify(tmp.usernameHash, tmp);
 
         cout << tmp.username << ' ' << tmp.name << ' ' << tmp.mailAddr << ' ' << tmp.privilege << endl;
     
@@ -133,7 +151,7 @@ public:
 
         Train tmp;
         tmp.set(info);
-        train_[info.get('i')] = tmp;
+        train_.Insert(Varchar(info.get('i')), tmp);
         cout << '0' << endl;
 
         return "okk";
@@ -142,10 +160,11 @@ public:
     std::string delete_train(const Cmd &info) {
         if (!train_.count(Varchar(info.get('i'))))
             return "delete_train: train do not exist";
-        const Train &tmp = train_.at(Varchar(info.get('i')));
+        Train tmp;
+        train_.Getone(Varchar(info.get('i')), tmp);
         if (tmp.released) 
             return "delete_train: train has already released";
-        train_.erase(Varchar(info.get('i')));
+        train_.Remove(Varchar(info.get('i')), tmp);
         cout << '0' << endl;
 
         return "okk";
@@ -154,14 +173,15 @@ public:
     std::string release_train(const Cmd &info) {
         if (!train_.count(Varchar(info.get('i'))))
             return "release_train: train do not exist";
-        Train tmp = train_.at(Varchar(info.get('i')));
+        Train tmp;
+        train_.Getone(Varchar(info.get('i')), tmp);
         if (tmp.released)
             return "release_train: train has already released";
         tmp.released = 1;
-        train_[Varchar(info.get('i'))] = tmp;
+        train_.Modify(tmp.trainIDhash, tmp);
 
         for (Date i = tmp.startDate; i <= tmp.endDate; i.addDay())
-            daytrain_[std::make_pair(Varchar(info.get('i')), i)] = dayTrain(tmp.seatNum);
+            daytrain_.Insert(std::make_pair(Varchar(info.get('i')), i), dayTrain(tmp.seatNum));
 
         for (int i = 0; i < tmp.stationNum; ++i) {
             stationTrain stmp;
@@ -174,7 +194,7 @@ public:
             stmp.startDate = tmp.startDate;
             stmp.endDate = tmp.endDate;
             stmp.startTime = tmp.startTime;
-            stationtrain_.insert(std::make_pair(Varchar(tmp.stationID[i]), stmp));
+            stationtrain_.Insert(Varchar(tmp.stationID[i]), stmp);
         }
 
         cout << '0' << endl;
@@ -185,14 +205,15 @@ public:
     std::string query_train(const Cmd &info) {
         if (!train_.count(Varchar(info.get('i'))))
             return "query_train: train does not exist";
-        const Train &tmp = train_.at(Varchar(info.get('i')));
+        Train tmp;
+        train_.Getone(Varchar(info.get('i')), tmp);
         Date start;
         start.set_mmdd(info.get('d'));
         if (start < tmp.startDate || start > tmp.endDate)
             return "query_train: not in train run range";
         dayTrain dtmp;
         if (tmp.released)
-            dtmp = daytrain_.at(std::make_pair(Varchar(info.get('i')), start));
+            daytrain_.Getone(std::make_pair(Varchar(info.get('i')), start), dtmp);
         else dtmp = dayTrain(tmp.seatNum);
 
         cout << tmp.trainID << ' ' << tmp.type << endl;
@@ -217,14 +238,8 @@ public:
         std::vector<stationTrain> strain, ttrain;
         std::vector<ticketTrain> atrain;
 
-        auto ranges = stationtrain_.equal_range(Varchar(info.get('s')));
-        auto ranget = stationtrain_.equal_range(Varchar(info.get('t')));
-
-        for (auto i = ranges.first; i != ranges.second; ++i)
-            strain.push_back(i->second);
-        for (auto i = ranget.first; i != ranget.second; ++i)
-            ttrain.push_back(i->second);
-
+        stationtrain_.Get(Varchar(info.get('s')), strain);
+        stationtrain_.Get(Varchar(info.get('t')), ttrain);
 
         if (strain.empty() || ttrain.empty())
             return cout << 0 << endl, "okk";
@@ -253,7 +268,8 @@ public:
             tt.leaveTime = startDay + si.startTime + si.leaveTime;
             tt.arriveTime = startDay + si.startTime + ttrain[j].arriveTime;
             tt.first = info.get('p') == "cost" ? tt.price : tt.arriveTime - tt.leaveTime;
-            const dayTrain& dt = daytrain_.at(std::make_pair(Varchar(si.trainID), startDay));
+            dayTrain dt;
+            daytrain_.Getone(std::make_pair(Varchar(si.trainID), startDay), dt);
 
             tt.seat = dt.getmin(si.idx, ttrain[j].idx);
             atrain.push_back(tt);
@@ -274,13 +290,8 @@ public:
     std::string query_transfer(const Cmd &info) {
         std::vector<stationTrain> strain, ttrain;
         
-        auto ranges = stationtrain_.equal_range(Varchar(info.get('s')));
-        auto ranget = stationtrain_.equal_range(Varchar(info.get('t')));
-
-        for (auto i = ranges.first; i != ranges.second; ++i)
-            strain.push_back(i->second);
-        for (auto i = ranget.first; i != ranget.second; ++i)
-            ttrain.push_back(i->second);
+        stationtrain_.Get(Varchar(info.get('s')), strain);
+        stationtrain_.Get(Varchar(info.get('t')), ttrain);
 
         Date today;
         today.set_mmdd(info.get('d'));
@@ -288,29 +299,32 @@ public:
         transferTrain ans;
         ans.first = INF;
 
-
         for (int i = 0; i < strain.size(); ++i) {
             Date startDay(((today.now + (strain[i].startTime + strain[i].leaveTime) % 1440 - strain[i].leaveTime) / 1440) * 1440); // 车 1 从始发站发车的日期
             if (startDay < strain[i].startDate || strain[i].endDate < startDay) continue;
-            const auto &st = train_.at(strain[i].trainIDhash);
+            Train st;
+            train_.Getone(strain[i].trainIDhash, st);
             const int &si = strain[i].idx;
 
-            for (int j = 0; j < ttrain.size(); ++j) {
-                if (strain[i].trainIDhash == ttrain[i].trainIDhash) continue;
-                const auto &tt = train_.at(ttrain[i].trainIDhash);
-                const int &ti = ttrain[i].idx;
 
+            for (int j = 0; j < ttrain.size(); ++j) {
+                if (strain[i].trainIDhash == ttrain[j].trainIDhash) continue;
+                Train tt;
+                train_.Getone(ttrain[j].trainIDhash, tt);
+                const int &ti = ttrain[j].idx;
 
                 for (int sk = si + 1; sk < st.stationNum; ++sk)
                     for (int tk = 0; tk < ti; ++tk) {
+                        
+
                         if (strcmp(st.stationID[sk], tt.stationID[tk]))
                             continue;
-                        
+
 
                         Date transfer = startDay + st.startTime + st.arriveTime[sk]; // 到达中转站的时间
                     
-                        Date startDay2((transfer.now / 1440 * 1440 + (tt.startTime + tt.leaveTime[ti]) % 1440 - tt.leaveTime[ti]) / 1440 * 1440); // 车 2 从始发站发车的日期
-                        if ((tt.startTime + tt.leaveTime[ti]) % 1440 < transfer.now % 1440) startDay2.addDay(); // 车 1 到达时间晚于车 2 发车时间，故发车日期 + 1
+                        Date startDay2((transfer.now / 1440 * 1440 + (tt.startTime + tt.leaveTime[tk]) % 1440 - tt.leaveTime[tk]) / 1440 * 1440); // 车 2 从始发站发车的日期
+                        if ((tt.startTime + tt.leaveTime[tk]) % 1440 < transfer.now % 1440) startDay2.addDay(); // 车 1 到达时间晚于车 2 发车时间，故发车日期 + 1
 
                         if (startDay2 > tt.endDate) continue;
                         if (startDay2 < tt.startDate) startDay2 = tt.startDate; 
@@ -346,10 +360,12 @@ public:
         if (ans.first == INF)
             return std::cout << 0 << std::endl, "okk";
         
-        const auto &dt1 = daytrain_.at(std::make_pair(Varchar(ans.train1), ans.day1));
+        dayTrain dt1, dt2;
+
+        daytrain_.Getone(std::make_pair(Varchar(ans.train1), ans.day1), dt1);
         int seat1 = dt1.getmin(ans.ids1, ans.idt1);
 
-        const auto &dt2 = daytrain_.at(std::make_pair(Varchar(ans.train2), ans.day2));
+        daytrain_.Getone(std::make_pair(Varchar(ans.train2), ans.day2), dt2);
         int seat2 = dt2.getmin(ans.ids2, ans.idt2);
 
         std::cout << ans.train1 << ' '
@@ -370,7 +386,8 @@ public:
             return "buy_ticket: user not login";
         if (!train_.count(info.get('i')))
             return "buy_ticket: train not exist";
-        const Train &t = train_.at(Varchar(info.get('i')));
+        Train t;
+        train_.Getone(Varchar(info.get('i')), t);
         if (!t.released)
             return "buy_ticket: train not released"; 
         
@@ -392,24 +409,25 @@ public:
         if (startDay < t.startDate || t.endDate < startDay)   
             return "buy_ticket: not in train run range";
 
-        dayTrain dt = daytrain_.at(std::make_pair(Varchar(t.trainIDhash), startDay));
+        dayTrain dt;
+        daytrain_.Getone(std::make_pair(Varchar(t.trainIDhash), startDay), dt);
     
         int buyNum = strtoint(info.get('n'));
         Order porder;
         int prices = (t.prices[ti] - t.prices[si]) * buyNum;
         if (dt.getmin(si, ti) >= buyNum) {
             dt.minus(si, ti, buyNum);
-            daytrain_[std::make_pair(Varchar(t.trainIDhash), startDay)] = dt;
+            daytrain_.Modify(std::make_pair(Varchar(t.trainIDhash), startDay), dt);
             porder.set(++ordercnt, startDay, info.get('i').c_str(), si, ti, info.get('f').c_str(), info.get('t').c_str(), 0, leavingTime, arrivingTime, prices, buyNum);
-            order_.insert(std::make_pair(ordercnt, porder));
-            pending_order_.insert(std::make_pair(std::make_pair(Varchar(t.trainIDhash), startDay), ordercnt));
-            user_order_.insert(std::make_pair(Varchar(info.get('u')), ordercnt));
+            order_.Insert(ordercnt, porder);
+            pending_order_.Insert(std::make_pair(Varchar(t.trainIDhash), startDay), ordercnt);
+            user_order_.Insert(Varchar(info.get('u')), ordercnt);
             std::cout << prices << std::endl;
         } else if (info.get('q') == "true") {
             porder.set(++ordercnt, startDay, info.get('i').c_str(), si, ti, info.get('f').c_str(), info.get('t').c_str(), 1, leavingTime, arrivingTime, prices, buyNum);
-            order_.insert(std::make_pair(ordercnt, porder));
-            pending_order_.insert(std::make_pair(std::make_pair(Varchar(t.trainIDhash), startDay), ordercnt));
-            user_order_.insert(std::make_pair(Varchar(info.get('u')), ordercnt));
+            order_.Insert(ordercnt, porder);
+            pending_order_.Insert(std::make_pair(Varchar(t.trainIDhash), startDay), ordercnt);
+            user_order_.Insert(Varchar(info.get('u')), ordercnt);
             std::cout << "queue" << std::endl;
         } else return "buy_ticket: buy ticket failed";
 
@@ -419,14 +437,12 @@ public:
     std::string query_order(const Cmd &info) {
         if (!online.count(info.get('u')))
             return "query_order: user not online";
-        const auto &range = user_order_.equal_range(Varchar(info.get('u')));
-        int cnt = 0;
-        for (auto it = range.first; it != range.second; ++it) ++cnt;
-        std::cout << cnt << std::endl;
-        if (cnt == 0) return "okk";
-        for (auto it = range.second; ; --it) {
-            if (it == range.second) continue;
-            const auto &o = order_.at(it->second);
+        std::vector<int> range;
+        user_order_.Get(Varchar(info.get('u')), range);
+        std::cout << range.size() << std::endl;
+        for (int i = range.size() - 1; i >= 0; --i) {
+            Order o;
+            order_.Getone(range[i], o);
             if (o.status == 0) std::cout << "[success] ";
             if (o.status == 1) std::cout << "[pending] ";
             if (o.status == 2) std::cout << "[refunded] ";
@@ -434,7 +450,6 @@ public:
                       << o.startStation << ' ' << o.leavingTime.get_mmddhrmi() << " -> " \
                       << o.endStation << ' ' << o.arrivingTime.get_mmddhrmi() << ' ' \
                       << o.prices / o.num << ' ' << o.num << std::endl;
-            if (it == range.first) break;
         }
     
         return "okk";
@@ -444,28 +459,30 @@ public:
         if (!online.count(info.get('u')))
             return "refund_ticket: user not online";
 
-        const auto &range = user_order_.equal_range(Varchar(info.get('u')));
+        std::vector<int> range;
+        user_order_.Get(Varchar(info.get('u')), range);
         int idx = info.have('n') ? strtoint(info.get('n')) : 1;
-        if (idx <= 0)
-            return "refund_ticket: -n must > 0";
-        auto it = range.second;
-        if (it != range.first) --it;
-        else return "refund_ticket: order exceed";
-        while (--idx)
-            if (it != range.first) --it;
-            else return "refund_ticket: order exceed";
+        
+        idx = range.size() - idx;
 
-        auto o = order_.at(it->second);
+        if (idx < 0 || idx >= range.size())
+            return "refund_ticket: -n must > 0";
+
+        Order o;
+        order_.Getone(range[idx], o);
         
         if (o.status == 2)
             return "refund_ticket: order has been refunded";
 
         if (o.status == 0) {
-            auto dt = daytrain_.at(std::make_pair(Varchar(o.trainID), o.day));
+            dayTrain dt;
+            daytrain_.Getone(std::make_pair(Varchar(o.trainID), o.day), dt);
             dt.minus(o.ids, o.idt, -o.num);
-            const auto &range2 = pending_order_.equal_range(std::make_pair(Varchar(o.trainID), o.day));
-            for (auto it2 = range2.first; it2 != range2.second; ) {
-                auto to = order_.at(it2->second);
+            std::vector<int> range2;
+            pending_order_.Get(std::make_pair(Varchar(o.trainID), o.day), range2);
+            for (auto it2 = range2.begin(); it2 != range2.end(); ) {
+                Order to;
+                order_.Getone(*it2, to);
                 if (to.status != 1) {
                     ++it2;
                     continue;
@@ -473,17 +490,15 @@ public:
                 if (dt.getmin(to.ids, to.idt) >= to.num) {
                     dt.minus(to.ids, to.idt, to.num);
                     to.status = 0;
-                    order_[it2->second] = to;
-                    auto tmp = it2;
-                    ++it2;
-                    pending_order_.erase(tmp);
+                    order_.Modify(*it2, to);
+                    pending_order_.Remove(std::make_pair(Varchar(o.trainID), o.day), *it2);
                 } else ++it2;
             }
-            daytrain_[std::make_pair(Varchar(o.trainID), o.day)] = dt;
+            daytrain_.Modify(std::make_pair(Varchar(o.trainID), o.day), dt);
         }
 
         o.status = 2;
-        order_[it->second] = o;
+        order_.Modify(range[idx], o);
 
         std::cout << '0' << std::endl;
 

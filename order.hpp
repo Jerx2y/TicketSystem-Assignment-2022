@@ -34,6 +34,9 @@ struct Order {
         prices = prices_;
         num = num_;
     }
+    bool operator<(const Order &rhs) const {
+        return id < rhs.id;
+    }
 };
 
 #endif
