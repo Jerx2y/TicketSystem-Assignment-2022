@@ -10,8 +10,10 @@
 #define LEAVE_SPLIT_LEFT 200
 #define LEAVE_MIN 100
 #define BLOCK_MIN 100
-using ll = long long;
-using namespace ::std;
+using ll = size_t;
+using std::vector;
+using std::ios;
+using std::fstream;
 namespace lailai {
     template<class K,class S, class Compare = std::less<K>> class BPT;
     template<class K, class S, class Compare = std::less<K>,class Com=std::less<S>>
@@ -33,7 +35,7 @@ namespace lailai {
         };
         int totalNode;
     public:
-        map(const std::string &file):bpt(file+"_index"),file_name(file+"_data"){
+        map(const std::string &file):bpt(file+".idx"),file_name(file+".dat"){
             fileData.open(file_name, ios::out | ios::in | ios::binary);
             if(!fileData.good()){
                 fileData.open(file_name, ios::out);
@@ -80,9 +82,21 @@ namespace lailai {
                 v.push_back(n);
             }
             if(v.empty())return false;
-            value = v[0];
+            value = v[0].value_;
             return true;
         }
+
+        int count(const K &key) {
+            vector<ll> v;
+            bpt.Get(key, v);
+            return v.size();
+        }
+
+        void Modify(const K &key, const S &value) { // need to be changed
+            Remove(key, value);
+            Insert(key, value);
+        }
+
         ll add(const Node &n){
             ++totalNode;
             fileData.seekg(0);
@@ -120,7 +134,7 @@ namespace lailai {
     public:
         class Node {//叶子节点内-块链-点
         public://维护第二关键字
-            long long value;
+            ll value;
             K key;
         public:
             void operator=(const Node &x) {
