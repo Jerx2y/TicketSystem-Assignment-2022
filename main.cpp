@@ -43,16 +43,17 @@ int main() {
         if (opt == "logout")
             result = sys.logout(info);
         if (opt == "clean")
-            result = sys.clear();
+            result = sys.clean();
         if (opt == "exit")
             return std::cout << "bye" << std::endl, 0;
         
         if (opt == "offline")
             sys.offline(), result = "okk";
         
-        if (result != "okk")
-            // std::cout << result << std::endl; 
+        if (result != "okk") {
             std::cout << -1 << std::endl;
+            // std::cout << "__DEBUG " << result << std::endl; 
+        }
 
         info.reset();
     }

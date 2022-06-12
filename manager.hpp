@@ -1,6 +1,7 @@
 #ifndef TICKET_SYSTEM_MANAGER_HPP
 #define TICKET_SYSTEM_MANAGER_HPP
 
+#include <cstdlib>
 #include <iostream>
 #include <cstring>
 
@@ -12,6 +13,7 @@
 #include "BPlustree.hpp"
 
 // TODO
+#include <string>
 #include <vector>
 #include <map>
 #include <algorithm> // sort
@@ -30,6 +32,7 @@ private:
     lailai::map<Varchar, stationTrain> stationtrain_;
     lailai::map<std::pair<Varchar, Date>, int> pending_order_;
     lailai::map<Varchar, int> user_order_;
+    lailai::map<int, int> constant;
 
     int ordercnt, usercnt;
 
@@ -41,14 +44,25 @@ public:
                 order_("order"),
                 stationtrain_("stationtrain"),
                 pending_order_("pendingorder"),
-                user_order_("userorder") {
-        ordercnt = 0; // TODO read file !!!
-        usercnt = 0;
+                user_order_("userorder"),
+                constant("constant") {
+        if (!constant.count(1)) {
+            constant.Insert(1, ordercnt = 0);
+            constant.Insert(2, usercnt = 0);
+        } else {
+            constant.Getone(1, ordercnt);
+            constant.Getone(2, usercnt);
+        }
     }
 
     ~Manager() {
-        ordercnt; // TODO
-        usercnt; // TODO
+        int tmp;
+        constant.Getone(1, tmp);
+        constant.Remove(1, tmp);
+        constant.Insert(1, ordercnt);
+        constant.Getone(2, tmp);
+        constant.Remove(2, tmp);
+        constant.Insert(2, usercnt);
     }
 
     std::string add_user(Cmd info) {
@@ -130,6 +144,8 @@ public:
         User tmp;
         user_.Getone(Varchar(info.get('u')), tmp);
 
+
+
         if (!(tmp.privilege < p || (tmp.privilege == p && info.get('u') == info.get('c'))))
             return "modify_profile: have not premission";
 
@@ -137,6 +153,7 @@ public:
         if (info.have('n')) strcpy(tmp.name, info.get('n').c_str());
         if (info.have('m')) strcpy(tmp.mailAddr, info.get('m').c_str());
         if (info.have('g')) tmp.privilege = strtoint(info.get('g'));
+        if (info.have('g') && online.count(info.get('u'))) online.at(info.get('u')) = strtoint(info.get('g'));
 
         user_.Modify(tmp.usernameHash, tmp);
 
@@ -399,6 +416,8 @@ public:
 
         if (si == -1 || ti == -1)
             return "buy_ticket: train not stop at s or t";
+        if (si >= ti)
+            return "buy_ticket: xxx";
             
         Date today;
         today.set_mmdd(info.get('d'));
@@ -509,7 +528,10 @@ public:
         return "okk";
     }
 
-    std::string clear() {
+    std::string clean() {
+        std::system("rm -f *.idx");
+        std::system("rm -f *.dat");
+        ordercnt = usercnt = 0;
         return "okk";
     }
 
