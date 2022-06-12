@@ -96,9 +96,12 @@ namespace lailai {
         void Modify(const K &key, const S &value) { // need to be changed
             ll index;
             if(!bpt.Getone(key,index))return;
-            typename BPT<K, S>::Node n_(key, index);
-            bpt.remove(n_);
-            Insert(key,value);
+            Node n(key,value);
+            fileData.seekg(index);
+            fileData.write(reinterpret_cast<char *>(&n), sizeof(Node));
+//            typename BPT<K, S>::Node n_(key, index);
+//            bpt.remove(n_);
+//            Insert(key,value);
         }
 
         ll add(const Node &n) {
@@ -1013,9 +1016,9 @@ namespace lailai {
 //          fileIndex.open(file_name,ios::in|ios::out|ios::binary);
         }
     };
-<<<<<<< HEAD
+//<<<<<<< HEAD
 
-=======
->>>>>>> c5b547695b6aeecf3fc19f9ee10ebc39421dea86
+//=======
+//>>>>>>> c5b547695b6aeecf3fc19f9ee10ebc39421dea86
 }
 #endif //TRAINTICKET2022_BPLUSTREE_HPP
