@@ -71,19 +71,22 @@ namespace lailai {
         }
 
         bool Getone(const K &key, S &value) {
-            vector<Node> v;
-            v.clear();
-            vector<ll> v_;
-            bpt.Get(key, v_);
-            for (auto i = v_.begin(); i != v_.end(); ++i) {
-                ll index = *i;
+//            vector<Node> v;
+//            v.clear();
+//            vector<ll> v_;
+            ll index;
+            bool flag = bpt.Getone(key, index);
+            if(!flag)return false;
+//            for (auto i = v_.begin(); i != v_.end(); ++i) {
+//                ll index = *i;
                 Node n;
                 fileData.seekg(index);
                 fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
-                v.push_back(n);
-            }
-            if (v.empty())return false;
-            value = v[0].value_;
+                value = n.value_;
+//                v.push_back(n);
+//            }
+//            if (v.empty())return false;
+//            value = v[0].value_;
             return true;
         }
 
@@ -365,7 +368,7 @@ namespace lailai {
             if (!l.num)return false;
             int i = binary_search_leave(l,n);
 //            for (i = 0; i < l.num; ++i)if (compare(n, l.array[i + 1]))break;
-            if (!com(n, l.array[i]) && !com(l.array[i], n)) {
+            if (!com(n.key, l.array[i].key) && !com(l.array[i].key, n.key)) {
                 n.value = l.array[i].value;
                 return true;
             }
