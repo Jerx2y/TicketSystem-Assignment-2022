@@ -5,12 +5,6 @@
 #include<vector>
 //裂块 =5的时候，分裂成两个各有两个块的情况
 //并块 =2的时候，与左儿子或者右儿子并块
-//#define BLOCK_SIZE 100
-//#define LEAVE_SIZE 100
-//#define BLOCK_SPLIT_LEFT 50
-//#define LEAVE_SPLIT_LEFT 50
-//#define LEAVE_MIN 20
-//#define BLOCK_MIN 20
 using ll = size_t;
 using std::vector;
 using std::ios;
@@ -142,13 +136,13 @@ namespace lailai {
     template<class K, class S, class Compare>
     class BPT {
     private:
-        int max(int x,int y){return (x>y)?x:y;}
-        const int BLOCK_SIZE = max(8192/(sizeof(K)+sizeof(ll)*2),10);
-        const int LEAVE_SIZE=max(8192/(sizeof(K)+sizeof(ll)),10);
-        const int LEAVE_SPLIT_LEFT=LEAVE_SIZE/2;
-        const int BLOCK_SPLIT_LEFT=BLOCK_SIZE/2;
-        const int BLOCK_MIN = BLOCK_SPLIT_LEFT/2;
-        const int LEAVE_MIN = LEAVE_SPLIT_LEFT/2;
+        constexpr static int max(ll x, ll y){return (x > y) ? x : y;}
+        static constexpr int BLOCK_SIZE = max(8192/(sizeof(K)+sizeof(ll)*2),10ll);
+        static constexpr int LEAVE_SIZE = BLOCK_SIZE;
+        static constexpr int LEAVE_SPLIT_LEFT=LEAVE_SIZE/2;
+        static constexpr int BLOCK_SPLIT_LEFT=BLOCK_SIZE/2;
+        static constexpr int BLOCK_MIN = BLOCK_SPLIT_LEFT/2;
+        static constexpr int LEAVE_MIN = LEAVE_SPLIT_LEFT/2;
     public:
         class Node {//叶子节点内-块链-点
         public://维护第二关键字
@@ -196,7 +190,11 @@ namespace lailai {
 
             Leave() {};
         };
-
+//缓存
+//        class Cache{
+//        private:
+//            const int Size =
+//        };
         struct KVblock {
             ll file_index = 0;
             Node key;
