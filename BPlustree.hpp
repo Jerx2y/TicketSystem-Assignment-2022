@@ -142,13 +142,12 @@ namespace lailai {
     template<class K, class S, class Compare>
     class BPT {
     private:
-        int max(int x,int y){return (x>y)?x:y;}
-        const int BLOCK_SIZE = max(8192/(sizeof(K)+sizeof(ll)*2),10);
-        const int LEAVE_SIZE=max(8192/(sizeof(K)+sizeof(ll)),10);
-        const int LEAVE_SPLIT_LEFT=LEAVE_SIZE/2;
-        const int BLOCK_SPLIT_LEFT=BLOCK_SIZE/2;
-        const int BLOCK_MIN = BLOCK_SPLIT_LEFT/2;
-        const int LEAVE_MIN = LEAVE_SPLIT_LEFT/2;
+        static constexpr int BLOCK_SIZE = std::max(8192/(sizeof(K)+sizeof(ll)*2),10ul);
+        static constexpr int LEAVE_SIZE = std::max(8192/(sizeof(K)+sizeof(ll)),10ul);
+        static constexpr int LEAVE_SPLIT_LEFT=LEAVE_SIZE/2;
+        static constexpr int BLOCK_SPLIT_LEFT=BLOCK_SIZE/2;
+        static constexpr int BLOCK_MIN = BLOCK_SPLIT_LEFT/2;
+        static constexpr int LEAVE_MIN = LEAVE_SPLIT_LEFT/2;
     public:
         class Node {//叶子节点内-块链-点
         public://维护第二关键字
@@ -957,5 +956,6 @@ namespace lailai {
 //          fileIndex.open(file_name,ios::in|ios::out|ios::binary);
         }
     };
+
 }
 #endif //TRAINTICKET2022_BPLUSTREE_HPP
