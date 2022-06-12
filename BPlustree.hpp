@@ -5,12 +5,6 @@
 #include<vector>
 //裂块 =5的时候，分裂成两个各有两个块的情况
 //并块 =2的时候，与左儿子或者右儿子并块
-//#define BLOCK_SIZE 100
-//#define LEAVE_SIZE 100
-//#define BLOCK_SPLIT_LEFT 50
-//#define LEAVE_SPLIT_LEFT 50
-//#define LEAVE_MIN 20
-//#define BLOCK_MIN 20
 using ll = size_t;
 using std::vector;
 using std::ios;
@@ -100,8 +94,11 @@ namespace lailai {
         }
 
         void Modify(const K &key, const S &value) { // need to be changed
-            Remove(key, value);
-            Insert(key, value);
+            ll index;
+            if(!bpt.Getone(key,index))return;
+            typename BPT<K, S>::Node n_(key, index);
+            bpt.remove(n_);
+            Insert(key,value);
         }
 
         ll add(const Node &n) {
@@ -141,9 +138,11 @@ namespace lailai {
 
     template<class K, class S, class Compare>
     class BPT {
+        friend class Cache;
     private:
-        static constexpr int BLOCK_SIZE = std::max(8192/(sizeof(K)+sizeof(ll)*2),10ul);
-        static constexpr int LEAVE_SIZE = std::max(8192/(sizeof(K)+sizeof(ll)),10ul);
+        constexpr static int max(ll x, ll y){return (x > y) ? x : y;}
+        static constexpr int BLOCK_SIZE = max(8192/(sizeof(K)+sizeof(ll)*2),10ll);
+        static constexpr int LEAVE_SIZE = BLOCK_SIZE;
         static constexpr int LEAVE_SPLIT_LEFT=LEAVE_SIZE/2;
         static constexpr int BLOCK_SPLIT_LEFT=BLOCK_SIZE/2;
         static constexpr int BLOCK_MIN = BLOCK_SPLIT_LEFT/2;
@@ -195,7 +194,65 @@ namespace lailai {
 
             Leave() {};
         };
+//缓存
+        class Cache{//for read
+        private:
+            BPT *bpt_;
+            int num_block=0;
+            int num_leave=0;
+            struct node_block{
+                Block b;
+                ll index;
+                bool change = false;
+                node_block* nxt= nullptr;
+                node_block(const ll &index,const Block &b):b(b),index(index){}
+            };
+            struct node_leave{
+                Leave le;
+                ll index;
+                bool change = false;
+                node_leave *nxt= nullptr;
+                node_leave(const ll &index,const Leave &le):le(le),index(index){}
+            };
+            const int Size = 100;
 
+            node_block *head_block=nullptr;
+            node_leave *head_leave=nullptr;
+            node_block *rear_block=nullptr;
+            node_leave *rear_leave=nullptr;
+        public:
+            Cache(BPT *bpt){
+                bpt_=bpt;
+                head_block= rear_block=new node_block;//头节点
+                head_leave=rear_leave=new node_leave;
+            }
+            void read_block(ll index,Block &b){
+                node_block *p = head_block->nxt;
+                while(p->nxt!= nullptr&&p->index!=index)p=p->nxt;
+                if(p->index==index){
+                    b=p->b;
+                    return;
+                }
+                else{
+                    bpt_->fileIndex.seekg(index);
+                    bpt_->fileIndex.read(reinterpret_cast<char *>(&b), sizeof(Block));
+                    rear_block->nxt  = new node_block(index,b);
+                    rear_block = rear_block->nxt;
+                    if(num_block>Size){
+                        node_block *p0=head_block;
+                        head_block=head_block->nxt;
+                        delete p0;
+                    }
+                    else ++num_block;
+                }
+
+            }
+            void read_leave(ll index,Leave &le){
+
+            }
+
+
+        };
         struct KVblock {
             ll file_index = 0;
             Node key;
@@ -956,6 +1013,9 @@ namespace lailai {
 //          fileIndex.open(file_name,ios::in|ios::out|ios::binary);
         }
     };
+<<<<<<< HEAD
 
+=======
+>>>>>>> c5b547695b6aeecf3fc19f9ee10ebc39421dea86
 }
 #endif //TRAINTICKET2022_BPLUSTREE_HPP
