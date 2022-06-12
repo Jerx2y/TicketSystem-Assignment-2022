@@ -142,8 +142,9 @@ namespace lailai {
     template<class K, class S, class Compare>
     class BPT {
     private:
-        static constexpr int BLOCK_SIZE = std::max(8192/(sizeof(K)+sizeof(ll)*2),10ul);
-        static constexpr int LEAVE_SIZE = std::max(8192/(sizeof(K)+sizeof(ll)*2),10ul);
+        constexpr static int max(ll x, ll y) { return (x > y) ? x : y; }
+        static constexpr int BLOCK_SIZE = max(8192/(sizeof(K)+sizeof(ll)*2),10ul);
+        static constexpr int LEAVE_SIZE = max(8192/(sizeof(K)+sizeof(ll)*2),10ul);
         static constexpr int LEAVE_SPLIT_LEFT=LEAVE_SIZE/2;
         static constexpr int BLOCK_SPLIT_LEFT=BLOCK_SIZE/2;
         static constexpr int BLOCK_MIN = BLOCK_SPLIT_LEFT/2;
