@@ -2,6 +2,7 @@
 #include<cstring>
 #include<cstdio>
 #include"BPlustree.hpp"
+using namespace std;
 struct test{
     char x[66];
     void operator =(const test &y){
@@ -20,8 +21,8 @@ struct test{
     test(){}
 };
 int main() {
-//    freopen("5.in","r",stdin);
-//    freopen("my.out","w",stdout);
+    freopen("1.in","r",stdin);
+    freopen("my.out","w",stdout);
 int n;
 cin >> n;
 lailai::map<test,ll> map("database");
