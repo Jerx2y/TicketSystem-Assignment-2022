@@ -94,11 +94,18 @@ namespace lailai {
         }
 
         void Modify(const K &key, const S &value) { // need to be changed
-            ll index;
-            if(!bpt.Getone(key,index))return;
-            typename BPT<K, S>::Node n_(key, index);
-            bpt.remove(n_);
-            Insert(key,value);
+            Remove(key, value);
+            Insert(key, value);
+//            ll index;
+//            if(!bpt.Getone(key,index))return;
+//            typename BPT<K, S>::Node n_(key, index);
+//            bpt.remove(n_);
+//            Insert(key,value);
+            //ll index;
+            //if (!bpt.Getone(key, index)) return ;
+            //fileData.seekg(index);
+            //Node n(key, value);
+            //fileData.write(reinterpret_cast<const char*>(&n), sizeof(Node));
         }
 
         ll add(const Node &n) {
@@ -362,7 +369,7 @@ namespace lailai {
             if (!l.num)return false;
             int i = binary_search_leave(l,n);
 //            for (i = 0; i < l.num; ++i)if (compare(n, l.array[i + 1]))break;
-            if (!com(n, l.array[i]) && !com(l.array[i], n)) {
+            if (!compare(n, l.array[i]) && !compare(l.array[i], n)) {
                 n.value = l.array[i].value;
                 return true;
             }
@@ -1013,9 +1020,5 @@ namespace lailai {
 //          fileIndex.open(file_name,ios::in|ios::out|ios::binary);
         }
     };
-<<<<<<< HEAD
-
-=======
->>>>>>> c5b547695b6aeecf3fc19f9ee10ebc39421dea86
 }
 #endif //TRAINTICKET2022_BPLUSTREE_HPP
