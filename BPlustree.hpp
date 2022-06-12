@@ -184,7 +184,7 @@ namespace lailai {
             //read head and tail from array
             Node array[LEAVE_SIZE + 5];
         public:
-            void MergeBlock(const int &offset1, const int &offset2);
+//            void MergeBlock(const int &offset1, const int &offset2);
 
             Leave() {};
         };
@@ -225,16 +225,16 @@ namespace lailai {
         ll add_one_leave() {//提供内存地址
             ll index = totalblock * sizeof(Block) + totalleave * sizeof(Leave) + 2 * sizeof(int) + sizeof(ll);
             ++totalleave;
-            fileIndex.seekg(sizeof(int));
-            fileIndex.write(reinterpret_cast<char *>(&totalleave), sizeof(int));
+//            fileIndex.seekg(sizeof(int));
+//            fileIndex.write(reinterpret_cast<char *>(&totalleave), sizeof(int));
             return index;
         }
 
         ll add_one_block() {
             ll index = totalblock * sizeof(Block) + totalleave * sizeof(Leave) + 2 * sizeof(int) + sizeof(ll);
             ++totalblock;
-            fileIndex.seekg(0);
-            fileIndex.write(reinterpret_cast<char *>(&totalblock), sizeof(int));
+//            fileIndex.seekg(0);
+//            fileIndex.write(reinterpret_cast<char *>(&totalblock), sizeof(int));
             return index;
         }
 
@@ -362,10 +362,10 @@ namespace lailai {
                 newroot.key[1] = pair_.key;
                 index_root = new_root_index;
                 root = newroot;
-                fileIndex.seekg(new_root_index);
-                fileIndex.write(reinterpret_cast<char *>(&newroot), sizeof(Block));
-                fileIndex.seekg(2 * sizeof(int));
-                fileIndex.write(reinterpret_cast<char *>(&index_root), sizeof(ll));
+//                fileIndex.seekg(new_root_index);
+//                fileIndex.write(reinterpret_cast<char *>(&newroot), sizeof(Block));
+//                fileIndex.seekg(2 * sizeof(int));
+//                fileIndex.write(reinterpret_cast<char *>(&index_root), sizeof(ll));
             }
         }
 
@@ -398,8 +398,8 @@ namespace lailai {
                 b.son[1] = add_one_leave();
                 ++r.num;
                 r.array[r.num] = key;
-                fileIndex.seekg(now_index);
-                fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
+//                fileIndex.seekg(now_index);
+//                fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
                 fileIndex.seekg(b.son[1]);
                 fileIndex.write(reinterpret_cast<char *>(&r), sizeof(Leave));
                 fileIndex.seekg(b.son[0]);
@@ -629,8 +629,8 @@ namespace lailai {
                     fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
                     return false;
                 } else {//调整中间节点
-                    fileIndex.seekg(now_index);
-                    fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
+//                    fileIndex.seekg(now_index);
+//                    fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
                     if (b.num < BLOCK_MIN) {
 //                        cout << "YES" << endl;
                         if (!b.fa.second) {//合并右邻居
@@ -674,7 +674,11 @@ namespace lailai {
                                 return true;
                             }
                         }
-                    } else return false;
+                    } else{
+                        fileIndex.seekg(now_index);
+                        fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
+                        return false;
+                    }
                 }
             }
         }
