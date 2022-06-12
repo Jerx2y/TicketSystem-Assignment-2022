@@ -94,8 +94,11 @@ namespace lailai {
         }
 
         void Modify(const K &key, const S &value) { // need to be changed
-            Remove(key, value);
-            Insert(key, value);
+            ll index;
+            if(!bpt.Getone(key,index))return;
+            typename BPT<K, S>::Node n_(key, index);
+            bpt.remove(n_);
+            Insert(key,value);
         }
 
         ll add(const Node &n) {
@@ -135,6 +138,7 @@ namespace lailai {
 
     template<class K, class S, class Compare>
     class BPT {
+        friend class Cache;
     private:
         constexpr static int max(ll x, ll y){return (x > y) ? x : y;}
         static constexpr int BLOCK_SIZE = max(8192/(sizeof(K)+sizeof(ll)*2),10ll);
@@ -191,10 +195,64 @@ namespace lailai {
             Leave() {};
         };
 //缓存
-//        class Cache{
-//        private:
-//            const int Size =
-//        };
+        class Cache{//for read
+        private:
+            BPT *bpt_;
+            int num_block=0;
+            int num_leave=0;
+            struct node_block{
+                Block b;
+                ll index;
+                bool change = false;
+                node_block* nxt= nullptr;
+                node_block(const ll &index,const Block &b):b(b),index(index){}
+            };
+            struct node_leave{
+                Leave le;
+                ll index;
+                bool change = false;
+                node_leave *nxt= nullptr;
+                node_leave(const ll &index,const Leave &le):le(le),index(index){}
+            };
+            const int Size = 100;
+
+            node_block *head_block=nullptr;
+            node_leave *head_leave=nullptr;
+            node_block *rear_block=nullptr;
+            node_leave *rear_leave=nullptr;
+        public:
+            Cache(BPT *bpt){
+                bpt_=bpt;
+                head_block= rear_block=new node_block;//头节点
+                head_leave=rear_leave=new node_leave;
+            }
+            void read_block(ll index,Block &b){
+                node_block *p = head_block->nxt;
+                while(p->nxt!= nullptr&&p->index!=index)p=p->nxt;
+                if(p->index==index){
+                    b=p->b;
+                    return;
+                }
+                else{
+                    bpt_->fileIndex.seekg(index);
+                    bpt_->fileIndex.read(reinterpret_cast<char *>(&b), sizeof(Block));
+                    rear_block->nxt  = new node_block(index,b);
+                    rear_block = rear_block->nxt;
+                    if(num_block>Size){
+                        node_block *p0=head_block;
+                        head_block=head_block->nxt;
+                        delete p0;
+                    }
+                    else ++num_block;
+                }
+
+            }
+            void read_leave(ll index,Leave &le){
+
+            }
+
+
+        };
         struct KVblock {
             ll file_index = 0;
             Node key;
