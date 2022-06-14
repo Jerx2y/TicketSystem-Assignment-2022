@@ -91,40 +91,22 @@ namespace lailai {
         }
 
         int count(const K &key) {
-            vector<ll> v;
-            bpt.Get(key, v);
-            return v.size();
+            ll tmp;
+            bool t = bpt.Getone(key, tmp);
+            return t;
         }
 
         void Modify(const K &key, const S &value) { // need to be changed
-<<<<<<< HEAD
-            Remove(key, value);
-            Insert(key, value);
-=======
-//            Remove(key, value);
-//            Insert(key, value);
->>>>>>> lailai
+        Remove(key, value);
+        Insert(key, value);
 //            ll index;
 //            if(!bpt.Getone(key,index))return;
+//            Node n(key,value);
+//            fileData.seekg(index);
+//            fileData.write(reinterpret_cast<char *>(&n), sizeof(Node));
 //            typename BPT<K, S>::Node n_(key, index);
 //            bpt.remove(n_);
 //            Insert(key,value);
-            //ll index;
-            //if (!bpt.Getone(key, index)) return ;
-            //fileData.seekg(index);
-            //Node n(key, value);
-            //fileData.write(reinterpret_cast<const char*>(&n), sizeof(Node));
-<<<<<<< HEAD
-=======
-            ll index;
-            if(!bpt.Getone(key,index))return;
-            Node n(key,value);
-            fileData.seekg(index);
-            fileData.write(reinterpret_cast<char *>(&n), sizeof(Node));
-//            typename BPT<K, S>::Node n_(key, index);
-//            bpt.remove(n_);
-//            Insert(key,value);
->>>>>>> lailai
         }
 
         ll add(const Node &n) {
@@ -388,11 +370,7 @@ namespace lailai {
             if (!l.num)return false;
             int i = binary_search_leave(l,n);
 //            for (i = 0; i < l.num; ++i)if (compare(n, l.array[i + 1]))break;
-<<<<<<< HEAD
-            if (!compare(n, l.array[i]) && !compare(l.array[i], n)) {
-=======
             if (!com(n.key, l.array[i].key) && !com(l.array[i].key, n.key)) {
->>>>>>> lailai
                 n.value = l.array[i].value;
                 return true;
             }
@@ -1043,5 +1021,9 @@ namespace lailai {
 //          fileIndex.open(file_name,ios::in|ios::out|ios::binary);
         }
     };
+//<<<<<<< HEAD
+
+//=======
+//>>>>>>> c5b547695b6aeecf3fc19f9ee10ebc39421dea86
 }
 #endif //TRAINTICKET2022_BPLUSTREE_HPP

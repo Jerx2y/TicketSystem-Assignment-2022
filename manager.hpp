@@ -74,7 +74,7 @@ public:
 
         if (user_.count(Varchar(info.get('u'))))
             return "add_user: user already exist";
-        
+
         if (isfirst)
             info.set('g', "10");
 
