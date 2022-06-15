@@ -312,19 +312,19 @@ ll index;
         bool find_one(Node &n){
             return find_one_block(n,root);
         }
-        void find_list_l(const Leave &le, const K &key, std::vector<ll> &v) {
+        void find_list_l(const Leave &le, const K &left,const K &right, std::vector<ll> &v) {
             for (int i = 1; i <= le.num; ++i) {
-                if (!com(le.array[i].key, key) && !com(key, le.array[i].key))v.push_back(le.array[i].value);
+                if (!com(le.array[i].key, left) && !com(right, le.array[i].key))v.push_back(le.array[i].value);//不比left小不比right大
             }
         }
 
-        void find_list_b(const Block &b, const K &key, std::vector<ll> &v) {
+        void find_list_b(const Block &b, const K &left,const K &right, std::vector<ll> &v) {
             if(!b.num)return;
             if (!b.isbottom) {
 //                cout << "&&" << endl;
                 int i;
                 for (i = 0; i < b.num; ++i) {
-                    if (com(key, b.key[i + 1]) || !com(key, b.key[i + 1]) && !com(b.key[i + 1], key))
+                    if (com(left, b.key[i + 1]) || !com(left, b.key[i + 1]) && !com(b.key[i + 1], left))
                         break;//下一个位置关键字大于等于
                 }
                 while (i <= b.num) {
@@ -332,23 +332,23 @@ ll index;
                     Block son;
                     fileIndex.seekg(index_son);
                     fileIndex.read(reinterpret_cast<char *>(&son), sizeof(Block));
-                    find_list_b(son, key, v);
+                    find_list_b(son, left,right, v);
                     ++i;
-                    if (i > b.num || com(key, b.key[i]))break;//新的位置关键字大于key
+                    if (i > b.num || com(right, b.key[i]))break;//新的位置关键字大于key
                 }
             } else {
                 int i;
                 for (i = 0; i < b.num; ++i) {
-                    if (com(key, b.key[i + 1]) || !com(key, b.key[i + 1]) && !com(b.key[i + 1], key))break;
+                    if (com(left, b.key[i + 1]) || !com(left, b.key[i + 1]) && !com(b.key[i + 1], left))break;
                 }
                 while (i <= b.num) {
                     ll index_son = b.son[i];
                     Leave son;
                     fileIndex.seekg(index_son);
                     fileIndex.read(reinterpret_cast<char *>(&son), sizeof(Leave));
-                    find_list_l(son, key, v);
+                    find_list_l(son, left,right, v);
                     ++i;
-                    if (i > b.num || com(key, b.key[i]))break;
+                    if (i > b.num || com(right, b.key[i]))break;
                 }
             }
 
@@ -378,10 +378,10 @@ ll index;
             fileIndex.seekg(index);//移动指针到指定位置
             fileIndex.read(reinterpret_cast<char *>(&b), sizeof(Block));
             for (int i = BLOCK_SPLIT_LEFT + 2; i <= b.num; ++i) {//复制过程
-                newb.key[i - LEAVE_SPLIT_LEFT - 1] = b.key[i];
+                newb.key[i - BLOCK_SPLIT_LEFT - 1] = b.key[i];
             }
             for (int i = BLOCK_SPLIT_LEFT + 1; i <= b.num + 1; ++i) {//复制过程
-                newb.son[i - LEAVE_SPLIT_LEFT - 1] = b.son[i];
+                newb.son[i - BLOCK_SPLIT_LEFT - 1] = b.son[i];
             }
             pair.key = b.key[BLOCK_SPLIT_LEFT + 1];
             //修改元素数量
@@ -990,9 +990,9 @@ ll index;
             fileIndex.seekg(index_root);
             fileIndex.write(reinterpret_cast<char *>(&root), sizeof(Block));
         }
-        void Get(const K &key, std::vector<S> &v) {
+        void Get(const K &left,const K &right, std::vector<S> &v) {
             v.clear();
-            find_list_b(root, key, v);
+            find_list_b(root, left,right, v);
         }
 
         bool Getone(const K &key,S &value){
