@@ -66,17 +66,17 @@ namespace lailai {
 
 
         };
-        void Get(const K &key,std::vector<S> &v){
+        void Get(const K &left,const K &right ,std::vector<S> &v){
             v.clear();
-            vector<ll> v_;
-            bpt.Get(key,v_);
-            for(auto i = v_.begin(); i!= v_.end();++i){
-                ll index = *i;
-                Node n;
-                fileData.seekg(index);
-                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
-                v.push_back(n.value_);
-            }
+//            vector<ll> v_;
+            bpt.Get(left,right,v);
+//            for(auto i = v.begin(); i!= v.end();++i){
+//                ll index = *i;
+//                Node n;
+//                fileData.seekg(index);
+//                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
+//                v.push_back(n.value_);
+//            }
         }
         bool Getone(const K &key, S &value){
 //            vector<Node> v;
@@ -93,30 +93,30 @@ namespace lailai {
 //            if(v.empty())return false;
 //            value = v[0].value_;
 //            return true;
-ll index;
-            bool flag = bpt.Getone(key,index);
+//ll index;
+            bool flag = bpt.Getone(key,value);
             if(!flag)return false;
-            Node n;
-            fileData.seekg(index);
-            fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
-            value=n.value_;
+//            Node n;
+//            fileData.seekg(index);
+//            fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
+//            value=n.value_;
             return true;
         }
         int count(const K &key) {
-            vector<ll> v;
+            vector<S> v;
             bpt.Get(key, v);
             return v.size();
         }
         void Modify(const K &key, const S &value) { // need to be changed
-            ll index = 9223372036854775807;
-            bool flag = bpt.Getone(key,index);
-            if(!flag)return;
-            Node n(key,value);
-            fileData.seekg(index);
-            fileData.write(reinterpret_cast<char *>(&n), sizeof(Node));
+//            ll index = 9223372036854775807;
+//            bool flag = bpt.Getone(key,index);
+//            if(!flag)return;
+//            Node n(key,value);
+//            fileData.seekg(index);
+//            fileData.write(reinterpret_cast<char *>(&n), sizeof(Node));
 //            Remove(key, value);
 //            Insert(key, value);
-
+                bpt.Modify(key,value);
         }
         ll add(const Node &n){
             ++totalNode;
@@ -133,21 +133,22 @@ ll index;
             bpt.Insert(key,index);
         }
         bool Remove(const K &key, const S &value){
-            vector<ll> v;
-            bpt.Get(key,v);
-            if(v.empty())return false;
-            for(auto i = v.begin(); i != v.end(); ++i){
-                ll index = *i;
-                Node n;
-                fileData.seekg(index);
-                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
-                if(!com(n.value_,value)&&!com(value,n.value_)){
-                    typename BPT<K,S>::Node n_(key,index);
-                    bpt.remove(n_);
-                    return true;
-                }
-            }
-            return false;
+//            vector<ll> v;
+//            Node n(key,value);
+            return bpt.Remove(key,value);
+//            if(v.empty())return false;
+//            for(auto i = v.begin(); i != v.end(); ++i){
+//                ll index = *i;
+//                Node n;
+//                fileData.seekg(index);
+//                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
+//                if(!com(n.value_,value)&&!com(value,n.value_)){
+//                    typename BPT<K,S>::Node n_(key,index);
+//                    bpt.remove(n_);
+//                    return true;
+//                }
+//            }
+//            return false;
         }
     };
     template<class K,class S,class Compare>
@@ -163,7 +164,7 @@ ll index;
     public:
         class Node {//叶子节点内-块链-点
         public://维护第二关键字
-            ll value;
+            S value;
             K key;
         public:
             void operator=(const Node &x) {
@@ -312,13 +313,13 @@ ll index;
         bool find_one(Node &n){
             return find_one_block(n,root);
         }
-        void find_list_l(const Leave &le, const K &left,const K &right, std::vector<ll> &v) {
+        void find_list_l(const Leave &le, const K &left,const K &right, std::vector<S> &v) {
             for (int i = 1; i <= le.num; ++i) {
                 if (!com(le.array[i].key, left) && !com(right, le.array[i].key))v.push_back(le.array[i].value);//不比left小不比right大
             }
         }
 
-        void find_list_b(const Block &b, const K &left,const K &right, std::vector<ll> &v) {
+        void find_list_b(const Block &b, const K &left,const K &right, std::vector<S> &v) {
             if(!b.num)return;
             if (!b.isbottom) {
 //                cout << "&&" << endl;
@@ -354,7 +355,7 @@ ll index;
 
         }
 
-        void insert(const K &key, const ll &value) {
+        void insert(const K &key, const S &value) {
             Node n(key, value);
             KVblock pair_;
             if (biinsert(root, n, index_root, pair_)) {//根节点的特判
@@ -869,6 +870,28 @@ ll index;
             }
 
         }
+
+        void modify(Block &b,const K &key,const S &value){
+            if(!b.num)return;
+            while(!b.isbottom){
+                int index;
+                for (index = 0; index < b.num; ++index)if (com(key, b.key[index + 1]))break;//下一个大于自己就取当前所在位置，退出循环
+                ll index_son = b.son[index];
+                fileIndex.seekg(index_son);
+                fileIndex.read(reinterpret_cast<char *>(&b), sizeof(Block));
+            }
+            int index;
+            for (index = 0; index < b.num; ++index)if(com(key, b.key[index + 1]))break;//下一个大于自己就取当前所在位置，退出循环
+            ll index_son = b.son[index];
+            Leave le;
+            fileIndex.seekg(index_son);
+            fileIndex.read(reinterpret_cast<char *>(&le), sizeof(Leave));
+            for (index = 0; index < b.num; ++index)if (com(key, le.array[index + 1].key))break;//下一个大于自己就取当前所在位置，退出循环
+            if(!com(le.array[index].key,key)&&!com(key,le.array[index].key))le.array[index].value=value;
+            else return;
+            fileIndex.seekg(index_son);
+            fileIndex.write(reinterpret_cast<char *>(&le), sizeof(Leave));
+        }
     public:
 
         BPT(const std::string &file) : file_name(file) {
@@ -1024,6 +1047,10 @@ ll index;
         void reset() {
 //          fileIndex.close();
 //          fileIndex.open(file_name,ios::in|ios::out|ios::binary);
+        }
+
+        void Modify(const K &key,const S &value){
+            modify(root,key,value);
         }
     };
 }
