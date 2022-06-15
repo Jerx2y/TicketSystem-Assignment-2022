@@ -154,8 +154,8 @@ ll index;
     class BPT {
     private:
         constexpr static int max(ll x, ll y){return (x > y) ? x : y;}
-        static constexpr int BLOCK_SIZE = max(8192/(sizeof(K)+sizeof(ll)*2),10ll);
-        static constexpr int LEAVE_SIZE = BLOCK_SIZE;
+        static constexpr int BLOCK_SIZE = max(8192/(sizeof(ll)*2),10ll);
+        static constexpr int LEAVE_SIZE =max(8192/(sizeof(K)+sizeof(S)),10ll);
         static constexpr int LEAVE_SPLIT_LEFT=LEAVE_SIZE/2;
         static constexpr int BLOCK_SPLIT_LEFT=BLOCK_SIZE/2;
         static constexpr int BLOCK_MIN = BLOCK_SPLIT_LEFT/2;
@@ -184,7 +184,7 @@ ll index;
         private:
             bool isbottom = false;
             ll son[BLOCK_SIZE + 5];
-            Node key[BLOCK_SIZE + 5];
+            K key[BLOCK_SIZE + 5];
             int num = 0;
             std::pair<Block *, ll> fa;//存储父节点，内存地址
         public:
@@ -210,12 +210,12 @@ ll index;
 
         struct KVblock {
             ll file_index = 0;
-            Node key;
+            K key;
         };
 
         struct KVleave {
             ll file_index = 0;
-            Node key;
+            K key;
         };
 
         const std::string file_name;
@@ -259,7 +259,7 @@ ll index;
             return index;
         }
 
-        void modify_father(const Leave &l, const Node &key) {
+        void modify_father(const Leave &l, const K &key) {
             Block *p = l.fa.first;
 //            if(p==nullptr)cout << "debug " << key.key << endl;
             if (l.fa.second) {
@@ -279,7 +279,7 @@ ll index;
             if(!b.num)return false;
             int i;
             for(i = 0; i < b.num; ++i){
-                if(compare(n,b.key[i+1]))break;
+                if(com(n.key,b.key[i+1]))break;
             }
             if(b.isbottom){
                 ll son_index = b.son[i];
@@ -300,7 +300,7 @@ ll index;
             if(!l.num)return false;
             int i;
             for( i = 0; i < l.num; ++i){
-                if(compare(n,l.array[i+1]))break;
+                if(com(n.key,l.array[i+1].key))break;
             }
             if(!i)return false;
             if(!com(n.key,l.array[i].key)&&!com(l.array[i].key,n.key)){
@@ -309,7 +309,7 @@ ll index;
             }
             return false;
         }
-        bool find_one(const Node &n){
+        bool find_one(Node &n){
             return find_one_block(n,root);
         }
         void find_list_l(const Leave &le, const K &key, std::vector<ll> &v) {
@@ -324,7 +324,7 @@ ll index;
 //                cout << "&&" << endl;
                 int i;
                 for (i = 0; i < b.num; ++i) {
-                    if (com(key, b.key[i + 1].key) || !com(key, b.key[i + 1].key) && !com(b.key[i + 1].key, key))
+                    if (com(key, b.key[i + 1]) || !com(key, b.key[i + 1]) && !com(b.key[i + 1], key))
                         break;//下一个位置关键字大于等于
                 }
                 while (i <= b.num) {
@@ -334,12 +334,12 @@ ll index;
                     fileIndex.read(reinterpret_cast<char *>(&son), sizeof(Block));
                     find_list_b(son, key, v);
                     ++i;
-                    if (i > b.num || com(key, b.key[i].key))break;//新的位置关键字大于key
+                    if (i > b.num || com(key, b.key[i]))break;//新的位置关键字大于key
                 }
             } else {
                 int i;
                 for (i = 0; i < b.num; ++i) {
-                    if (com(key, b.key[i + 1].key) || !com(key, b.key[i + 1].key) && !com(b.key[i + 1].key, key))break;
+                    if (com(key, b.key[i + 1]) || !com(key, b.key[i + 1]) && !com(b.key[i + 1], key))break;
                 }
                 while (i <= b.num) {
                     ll index_son = b.son[i];
@@ -348,7 +348,7 @@ ll index;
                     fileIndex.read(reinterpret_cast<char *>(&son), sizeof(Leave));
                     find_list_l(son, key, v);
                     ++i;
-                    if (i > b.num || com(key, b.key[i].key))break;
+                    if (i > b.num || com(key, b.key[i]))break;
                 }
             }
 
@@ -401,7 +401,7 @@ ll index;
                 b.isbottom = true;
                 ++b.num;
                 Leave l, r;
-                b.key[1] = key;
+                b.key[1] = key.key;
                 b.son[0] = add_one_leave();
                 b.son[1] = add_one_leave();
                 ++r.num;
@@ -417,7 +417,7 @@ ll index;
             int index;
             for (index = 0; index < b.num; ++index) {
                 //debug
-                if (compare(key, b.key[index + 1]))break;//下一个大于自己就取当前所在位置，退出循环
+                if (com(key.key, b.key[index + 1]))break;//下一个大于自己就取当前所在位置，退出循环
             }
             ll son_index = b.son[index];
             if (!b.isbottom) {//非叶子结点的父节点
@@ -496,7 +496,7 @@ ll index;
             for (int i = LEAVE_SPLIT_LEFT + 1; i <= le.num; ++i) {//复制过程
                 newle.array[i - LEAVE_SPLIT_LEFT] = le.array[i];
             }
-            pair.key = newle.array[1];
+            pair.key = newle.array[1].key;
             pair.file_index = add_one_leave();
             //修改元素数量
             newle.num = le.num - LEAVE_SPLIT_LEFT;
@@ -526,7 +526,7 @@ ll index;
                 }
                 le.array[i + 1] = key;
                 if (!i) {
-                    modify_father(le, key);
+                    modify_father(le, key.key);
                 }
             }
             //-----插入结束-----是否裂块
@@ -610,7 +610,7 @@ ll index;
 //            cout << "\n----------"<<endl;
             int i;
             for (i = 0; i < b.num; ++i) {
-                if(compare(key,b.key[i+1]))break;
+                if(com(key.key,b.key[i+1]))break;
             }
             ll index_son = b.son[i];
             if (!b.isbottom) {
@@ -744,7 +744,7 @@ ll index;
             for (int i = 1; i <= rle.num; ++i) {
                 rle.array[i] = rle.array[i + 1];
             }
-            le.fa.first->key[le.fa.second+1]=rle.array[1];
+            le.fa.first->key[le.fa.second+1]=rle.array[1].key;
         }
 
         void get_one_child_l(Leave &le, Leave &lle) {
@@ -752,7 +752,7 @@ ll index;
             lle.num--;
             for(int i = le.num; i > 1; --i)le.array[i]=le.array[i-1];
             le.array[1]=lle.array[lle.num+1];
-            le.fa.first->key[le.fa.second]=le.array[1];
+            le.fa.first->key[le.fa.second]=le.array[1].key;
         }
 
         void merge_r(Leave &le, Leave &rle) {
@@ -788,7 +788,7 @@ ll index;
                 l.array[j] = l.array[j + 1];
             }
             if(i==1){
-                modify_father(l,l.array[1]);
+                modify_father(l,l.array[1].key);
             }
             l.num--;
             if (l.num < LEAVE_MIN) {
@@ -916,7 +916,7 @@ ll index;
 //            Node key(key_, 1);
             int i;
             for(i = 0; i<root.num; ++i){
-                if(compare(key_,root.key[i+1]))break;
+                if(com(key_.key,root.key[i+1]))break;
             }
             //debug
 //            cout <<"---root----"<< endl;
@@ -947,7 +947,7 @@ ll index;
                             ++root.num;
                             root.son[1]=root.son[0];
                             root.son[0]=index=add_one_leave();
-                            root.key[1]=l.array[1];
+                            root.key[1]=l.array[1].key;
                             fileIndex.seekg(index);
                             fileIndex.write(reinterpret_cast<char *>(&r), sizeof(Leave));
                         }
@@ -990,12 +990,12 @@ ll index;
             fileIndex.seekg(index_root);
             fileIndex.write(reinterpret_cast<char *>(&root), sizeof(Block));
         }
-        void Get(const K &key, std::vector<ll> &v) {
+        void Get(const K &key, std::vector<S> &v) {
             v.clear();
             find_list_b(root, key, v);
         }
 
-        bool Getone(const K &key,ll &value){
+        bool Getone(const K &key,S &value){
 //            vector<ll> v;
 //            v.clear();
 //            find_list_b(root, key, v);
@@ -1010,11 +1010,11 @@ ll index;
             return true;
         }
 
-        void Insert(const K &key, const ll &value) {
+        void Insert(const K &key, const S &value) {
             insert(key, value);
         }
 
-        bool Remove(const K &key,ll value) {
+        bool Remove(const K &key,S value) {
             Node n(key,value);
             if(!find_one(n))return false;
             remove(n);
