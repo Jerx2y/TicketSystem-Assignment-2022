@@ -71,22 +71,13 @@ namespace lailai {
         }
 
         bool Getone(const K &key, S &value) {
-//            vector<Node> v;
-//            v.clear();
-//            vector<ll> v_;
-            ll index;
+            ll index=9223372036854775807;
             bool flag = bpt.Getone(key, index);
             if(!flag)return false;
-//            for (auto i = v_.begin(); i != v_.end(); ++i) {
-//                ll index = *i;
-                Node n;
-                fileData.seekg(index);
-                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
-                value = n.value_;
-//                v.push_back(n);
-//            }
-//            if (v.empty())return false;
-//            value = v[0].value_;
+            Node n;
+            fileData.seekg(index);
+            fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
+            value = n.value_;
             return true;
         }
 
@@ -97,16 +88,25 @@ namespace lailai {
         }
 
         void Modify(const K &key, const S &value) { // need to be changed
-        Remove(key, value);
-        Insert(key, value);
+            ll index=9223372036854775807;
+//            std::cout << "modify " << key << std::endl;
+//            Remove(key, value);
+//            Insert(key, value);
 //            ll index;
 //            if(!bpt.Getone(key,index))return;
-//            Node n(key,value);
-//            fileData.seekg(index);
-//            fileData.write(reinterpret_cast<char *>(&n), sizeof(Node));
 //            typename BPT<K, S>::Node n_(key, index);
 //            bpt.remove(n_);
 //            Insert(key,value);
+            //ll index;
+            //if (!bpt.Getone(key, index)) return ;
+            //fileData.seekg(index);
+            //Node n(key, value);
+            //fileData.write(reinterpret_cast<const char*>(&n), sizeof(Node));
+            if(!bpt.Getone(key,index))return;
+//            std::cout << "here" << std::endl;
+            Node n(key,value);
+            fileData.seekg(index);
+            fileData.write(reinterpret_cast<char *>(&n), sizeof(Node));
         }
 
         ll add(const Node &n) {
@@ -348,9 +348,6 @@ namespace lailai {
         bool find_one_block(Node &n, const Block &b) {
             if (!b.num)return false;
             int i = binary_search_block(b,n);
-//            for (i = 0; i < b.num; ++i) {
-//                if (compare(n, b.key[i + 1]))break;
-//            }
             if (b.isbottom) {
                 ll son_index = b.son[i];
                 fileIndex.seekg(son_index);
@@ -369,7 +366,6 @@ namespace lailai {
         bool find_one_leave(Node &n, const Leave &l) {
             if (!l.num)return false;
             int i = binary_search_leave(l,n);
-//            for (i = 0; i < l.num; ++i)if (compare(n, l.array[i + 1]))break;
             if (!com(n.key, l.array[i].key) && !com(l.array[i].key, n.key)) {
                 n.value = l.array[i].value;
                 return true;
@@ -1002,6 +998,7 @@ namespace lailai {
             Node n(key, value);
             bool flag = find_one_block(n, root);
             value = n.value;
+//            if(flag)std::cout << "FindOut";
             return flag;
         }
 
