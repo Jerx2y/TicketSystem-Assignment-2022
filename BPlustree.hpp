@@ -154,7 +154,7 @@ ll index;
     class BPT {
     private:
         constexpr static int max(ll x, ll y){return (x > y) ? x : y;}
-        static constexpr int BLOCK_SIZE = max(8192/(sizeof(ll)*2),10ll);
+        static constexpr int BLOCK_SIZE = max(8192/(sizeof(K)*2),10ll);
         static constexpr int LEAVE_SIZE =max(8192/(sizeof(K)+sizeof(S)),10ll);
         static constexpr int LEAVE_SPLIT_LEFT=LEAVE_SIZE/2;
         static constexpr int BLOCK_SPLIT_LEFT=BLOCK_SIZE/2;
