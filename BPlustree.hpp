@@ -90,6 +90,18 @@ namespace lailai {
         void Modify(const K &key, const S &value) { // need to be changed
             ll index=9223372036854775807;
 //            std::cout << "modify " << key << std::endl;
+//            Remove(key, value);
+//            Insert(key, value);
+//            ll index;
+//            if(!bpt.Getone(key,index))return;
+//            typename BPT<K, S>::Node n_(key, index);
+//            bpt.remove(n_);
+//            Insert(key,value);
+            //ll index;
+            //if (!bpt.Getone(key, index)) return ;
+            //fileData.seekg(index);
+            //Node n(key, value);
+            //fileData.write(reinterpret_cast<const char*>(&n), sizeof(Node));
             if(!bpt.Getone(key,index))return;
 //            std::cout << "here" << std::endl;
             Node n(key,value);
