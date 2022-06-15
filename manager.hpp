@@ -407,7 +407,11 @@ public:
         train_.Getone(Varchar(info.get('i')), t);
         if (!t.released)
             return "buy_ticket: train not released"; 
-        
+
+        int buyNum = strtoint(info.get('n'));
+        if (buyNum > t.seatNum)
+            return "buy_ticket: buy num is greater than train set num";
+
         int si = -1, ti = -1;
         for (int i = 0; i < t.stationNum; ++i) {
             if (!strcmp(t.stationID[i], info.get('f').c_str())) si = i;
@@ -417,7 +421,7 @@ public:
         if (si == -1 || ti == -1)
             return "buy_ticket: train not stop at s or t";
         if (si >= ti)
-            return "buy_ticket: xxx";
+            return "buy_ticket: train direction is not right";
             
         Date today;
         today.set_mmdd(info.get('d'));
@@ -431,9 +435,9 @@ public:
         dayTrain dt;
         daytrain_.Getone(std::make_pair(Varchar(t.trainIDhash), startDay), dt);
     
-        int buyNum = strtoint(info.get('n'));
         Order porder;
         int prices = (t.prices[ti] - t.prices[si]) * buyNum;
+
         if (dt.getmin(si, ti) >= buyNum) {
             dt.minus(si, ti, buyNum);
             daytrain_.Modify(std::make_pair(Varchar(t.trainIDhash), startDay), dt);
