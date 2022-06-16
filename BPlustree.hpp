@@ -945,16 +945,12 @@ namespace lailai {
                 fileIndex.read(reinterpret_cast<char *>(&b), sizeof(Block));
             }
             int index;
-//            std::cout << "BLOCK " << b.num<<' '<<b.isbottom << std::endl;
             for (index = 0; index < b.num; ++index)if(com(key, b.key[index + 1])){
 //                std::cout << "BLOCK " << b.key[index + 1] << std::endl;
                     break;//下一个大于自己就取当前所在位置，退出循环
             }
 //            std::cout << "INDEX " << index << std::endl;
             ll index_son = b.son[index];
-            Leave le;
-            fileIndex.seekg(index_son);
-            fileIndex.read(reinterpret_cast<char *>(&le), sizeof(Leave));
 //            std::cout << "KEY " << key<<' ' << le.num << std::endl;
             for (index = 0; index < le.num; ++index){
 //                std::cout << "COMPARE " << key << le.array[index+1].key << ' ' << com(key, le.array[index + 1].key) << std::endl;
