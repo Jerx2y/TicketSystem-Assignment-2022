@@ -46,6 +46,7 @@ public:
                 pending_order_("pendingorder"),//, 0),
                 user_order_("userorder") { //, 0), {
         order_.get_info(usercnt, 1);
+        srand(time(0));
     }
 
     ~Manager() {
@@ -248,9 +249,8 @@ public:
         if (strain.empty() || ttrain.empty())
             return cout << 0 << endl, "okk";
 
-
-        sort(strain.begin(), strain.end());
-        sort(ttrain.begin(), ttrain.end());
+//        mysort<stationTrain>(strain.begin(), strain.end());
+//        mysort<stationTrain>(ttrain.begin(), ttrain.end());
 
         Date today;
         today.set_mmdd(info.get('d'));
@@ -278,7 +278,7 @@ public:
             atrain.push_back(tt);
         }
 
-        sort(atrain.begin(), atrain.end());
+        mysort<ticketTrain>(atrain.begin(), atrain.end());
 
         std::cout << atrain.size() << std::endl;
         for (const auto &i : atrain)

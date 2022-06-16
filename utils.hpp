@@ -2,6 +2,7 @@
 #define TICKET_SYSTEM_UTILS_HPP
 
 #include <iostream>
+#include "vector.hpp"
 
 constexpr int ZH = 3; // 中文字符所占字节数
 constexpr int EPS = 1;
@@ -196,6 +197,22 @@ public:
         return get_mmdd() + ' ' + get_hrmi();
     }
 };
+
+template<typename T>
+void mysort(typename sjtu::vector<T>::iterator it1, typename sjtu::vector<T>::iterator it2) {
+    int len = it2 - it1;
+    if (len <= 1) return;
+    const T pivot = *(it1 + rand() % len);
+    auto i = it1, j = it1, k = it2;
+    while (i - k < 0) {
+        if (*i < pivot) std::swap(*i, *j), ++i, ++j;
+        else if (pivot < *i) --k, std::swap(*i, *k);
+        else ++i;
+    }
+    mysort<T>(it1, j);
+    mysort<T>(k, it2);
+}
+
 
 const int Date::daysum[13] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
 

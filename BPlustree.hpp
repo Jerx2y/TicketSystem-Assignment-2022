@@ -1,10 +1,11 @@
 #ifndef TRAINTICKET2022_BPLUSTREE_HPP
 #define TRAINTICKET2022_BPLUSTREE_HPP
 #include<fstream>
-#include "vector.hpp"
+#include "utils.hpp"
 //裂块 =5的时候，分裂成两个各有两个块的情况
 //并块 =2的时候，与左儿子或者右儿子并块
 using ll = size_t;
+using sjtu::vector;
 using std::ios;
 using std::fstream;
 namespace lailai {
@@ -42,7 +43,7 @@ namespace lailai {
 //                fileData.seekg(0);
 //                fileData.read(reinterpret_cast<char *>(&totalNode), sizeof(int));
             }
-        
+
         ~map(){
 //            fileData.seekg(0);
 //            fileData.write(reinterpret_cast<char *>(&totalNode), sizeof(int));
@@ -128,7 +129,7 @@ namespace lailai {
 
 
         };
-        void Get(const K &left,const K &right ,sjtu::vector<S> &v){
+        void Get(const K &left,const K &right ,vector<S> &v){
             v.clear();
 //            vector<ll> v_;
             bpt.Get(left,right,v);
@@ -287,11 +288,29 @@ namespace lailai {
 
         Compare com;
 
-        int totalblock;
+//        int totalblock;
+//
+//        int totalleave;
+//
+//        ll index_root;
 
-        int totalleave;
+        class basicManager{
+        public:
+            int totalblock=1;
 
-        ll index_root;
+            int totalleave=0;
+
+            ll index_root;
+
+            int stack_block[500];
+
+            int stack_leave[500];
+
+            int top_block=0;
+
+            int top_leave=0;
+        }basicManager;
+
 
         bool compare(const Node &n1, const Node &n2) {
             if (com(n1.key, n2.key))return true;
@@ -300,24 +319,34 @@ namespace lailai {
 
         }
 
-        void recycle_leave(ll index) {}
+        void recycle_leave(ll index) {
+            if(basicManager.top_leave<1500-1)basicManager.stack_leave[++basicManager.top_leave]=index;
+        }
 
-        void recycle_block(ll index) {}
+        void recycle_block(ll index) {
+            if(basicManager.top_block<1500-1)basicManager.stack_block[++basicManager.top_block]=index;
+        }
 
         ll add_one_leave() {//提供内存地址
-            ll index = totalblock * sizeof(Block) + totalleave * sizeof(Leave) + 2 * sizeof(int) + sizeof(ll);
-            ++totalleave;
-            fileIndex.seekg(sizeof(int));
-            fileIndex.write(reinterpret_cast<char *>(&totalleave), sizeof(int));
-            return index;
+            if(!basicManager.top_leave){
+                ll index = basicManager.totalblock * sizeof(Block) + basicManager.totalleave * sizeof(Leave) + sizeof(basicManager);
+                ++basicManager.totalleave;
+//                fileIndex.seekg(sizeof(int));
+//                fileIndex.write(reinterpret_cast<char *>(&totalleave), sizeof(int));
+                return index;
+            }
+            return basicManager.stack_leave[basicManager.top_leave--];
         }
 
         ll add_one_block() {
-            ll index = totalblock * sizeof(Block) + totalleave * sizeof(Leave) + 2 * sizeof(int) + sizeof(ll);
-            ++totalblock;
-            fileIndex.seekg(0);
-            fileIndex.write(reinterpret_cast<char *>(&totalblock), sizeof(int));
-            return index;
+            if(!basicManager.top_block){
+                ll index = basicManager.totalblock * sizeof(Block) + basicManager.totalleave * sizeof(Leave) + sizeof(basicManager);
+                ++basicManager.totalblock;
+//            fileIndex.seekg(0);
+//            fileIndex.write(reinterpret_cast<char *>(&totalblock), sizeof(int));
+                return index;
+            }
+            return basicManager.stack_block[basicManager.top_block--];
         }
 
         void modify_father(const Leave &l, const K &key) {
@@ -373,13 +402,13 @@ namespace lailai {
         bool find_one(Node &n){
             return find_one_block(n,root);
         }
-        void find_list_l(const Leave &le, const K &left,const K &right, sjtu::vector<S> &v) {
+        void find_list_l(const Leave &le, const K &left,const K &right, vector<S> &v) {
             for (int i = 1; i <= le.num; ++i) {
                 if (!com(le.array[i].key, left) && !com(right, le.array[i].key))v.push_back(le.array[i].value);//不比left小不比right大
             }
         }
 
-        void find_list_b(const Block &b, const K &left,const K &right, sjtu::vector<S> &v) {
+        void find_list_b(const Block &b, const K &left,const K &right, vector<S> &v) {
             if(!b.num)return;
             if (!b.isbottom) {
 //                cout << "&&" << endl;
@@ -418,19 +447,19 @@ namespace lailai {
         void insert(const K &key, const S &value) {
             Node n(key, value);
             KVblock pair_;
-            if (biinsert(root, n, index_root, pair_)) {//根节点的特判
+            if (biinsert(root, n, basicManager.index_root, pair_)) {//根节点的特判
                 Block newroot;
                 newroot.num = 1;
                 ll new_root_index = add_one_block();
-                newroot.son[0] = index_root;
+                newroot.son[0] = basicManager.index_root;
                 newroot.son[1] = pair_.file_index;
                 newroot.key[1] = pair_.key;
-                index_root = new_root_index;
+                basicManager.index_root = new_root_index;
                 root = newroot;
                 fileIndex.seekg(new_root_index);
                 fileIndex.write(reinterpret_cast<char *>(&newroot), sizeof(Block));
                 fileIndex.seekg(2 * sizeof(int));
-                fileIndex.write(reinterpret_cast<char *>(&index_root), sizeof(ll));
+                fileIndex.write(reinterpret_cast<char *>(&basicManager.index_root), sizeof(ll));
             }
         }
 
@@ -742,7 +771,6 @@ namespace lailai {
                     fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
                     return false;
                 } else {//调整中间节点
-
                     fileIndex.seekg(now_index);
                     fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
                     if (b.num < BLOCK_MIN) {
@@ -973,43 +1001,49 @@ namespace lailai {
 
         BPT(const std::string &file) : file_name(file) {
             fileIndex.open(file_name, ios::out | ios::in | ios::binary);
+//            std::cout << "qwq" << std::endl;
             if (!fileIndex.good()) {
+//                std::cout << "qwq" << std::endl;
 //                cout << "here" << endl;
                 fileIndex.open(file_name, ios::out);
                 fileIndex.close();
                 fileIndex.open(file_name, ios::out | ios::in | ios::binary);
+                basicManager.index_root=sizeof(basicManager);
                 fileIndex.seekg(0);
-                totalblock = 1;
-                fileIndex.write(reinterpret_cast<char *>(&totalblock), sizeof(int));
-                fileIndex.seekg(sizeof(int));
-                totalleave = 0;
-                fileIndex.write(reinterpret_cast<char *>(&totalleave), sizeof(int));
-                fileIndex.seekg(2 * sizeof(int));
-                index_root = 2 * sizeof(int) + sizeof(ll);
-                fileIndex.write(reinterpret_cast<char *>(&index_root), sizeof(ll));
-                fileIndex.seekg(index_root);
+                fileIndex.write(reinterpret_cast<char *>(&basicManager), sizeof(basicManager));
+//                fileIndex.write(reinterpret_cast<char *>(&basicManager.totalblock), sizeof(int));
+//                fileIndex.seekg(sizeof(int));
+//                basicManager.totalleave = 0;
+//                fileIndex.write(reinterpret_cast<char *>(&basicManager.totalleave), sizeof(int));
+//                fileIndex.seekg(2 * sizeof(int));
+//                basicManager.index_root = 2 * sizeof(int) + sizeof(ll);
+//                fileIndex.write(reinterpret_cast<char *>(&basicManager.index_root), sizeof(ll));
+                fileIndex.seekg(basicManager.index_root);
                 fileIndex.write(reinterpret_cast<char *>(&root), sizeof(Block));
             } else {
                 fileIndex.seekg(0);
-                fileIndex.read(reinterpret_cast<char *>(&totalblock), sizeof(int));
-                fileIndex.seekg(sizeof(int));
-                fileIndex.read(reinterpret_cast<char *>(&totalleave), sizeof(int));
-                fileIndex.seekg(2 * sizeof(int));
-                fileIndex.read(reinterpret_cast<char *>(&index_root), sizeof(ll));
-                fileIndex.seekg(index_root);
+                fileIndex.read(reinterpret_cast<char *>(&basicManager), sizeof(basicManager));
+//                fileIndex.seekg(sizeof(int));
+//                fileIndex.read(reinterpret_cast<char *>(&totalleave), sizeof(int));
+//                fileIndex.seekg(2 * sizeof(int));
+//                fileIndex.read(reinterpret_cast<char *>(&index_root), sizeof(ll));
+                fileIndex.seekg(basicManager.index_root);
+//                std::cout << "qwq" << std::endl;
                 fileIndex.read(reinterpret_cast<char *>(&root), sizeof(Block));
             }
         };
 
         ~BPT() {
-            fileIndex.seekg(index_root);
-            fileIndex.write(reinterpret_cast<char *>(&root), sizeof(Block));
-            fileIndex.seekg(2 * sizeof(int));
-            fileIndex.write(reinterpret_cast<char *>(&index_root), sizeof(ll));
             fileIndex.seekg(0);
-            fileIndex.write(reinterpret_cast<char *>(&totalblock), sizeof(int));
-            fileIndex.seekg(sizeof(int));
-            fileIndex.write(reinterpret_cast<char *>(&totalleave), sizeof(int));
+            fileIndex.write(reinterpret_cast<char *>(&basicManager), sizeof(basicManager));
+//            fileIndex.seekg(2 * sizeof(int));
+//            fileIndex.write(reinterpret_cast<char *>(&index_root), sizeof(ll));
+//            fileIndex.seekg(0);
+//            fileIndex.write(reinterpret_cast<char *>(&totalblock), sizeof(int));
+//            fileIndex.seekg(sizeof(int));
+//            fileIndex.write(reinterpret_cast<char *>(&totalleave), sizeof(int));
+            fileIndex.seekg(basicManager.index_root);
+            fileIndex.write(reinterpret_cast<char *>(&root), sizeof(Block));
             fileIndex.close();
         };
         void remove(const Node &key_) {//确定存在的情况下
@@ -1073,11 +1107,11 @@ namespace lailai {
                 son.fa.second=i;
                 if (biremove(son, key_, index_son)) {
                     if (!root.num) {
-                        recycle_block(index_root);
-                        index_root = root.son[0];
+                        recycle_block(basicManager.index_root);
+                        basicManager.index_root = root.son[0];
                         fileIndex.seekg(2*sizeof(int));
-                        fileIndex.write(reinterpret_cast<char *>(&index_root), sizeof(ll));
-                        fileIndex.seekg(index_root);
+                        fileIndex.write(reinterpret_cast<char *>(&basicManager.index_root), sizeof(ll));
+                        fileIndex.seekg(basicManager.index_root);
                         fileIndex.read(reinterpret_cast<char *>(&root), sizeof(Block));//换根
                     }
 
@@ -1087,10 +1121,10 @@ namespace lailai {
 //            cout <<"---root write---" <<endl;
 //            cout << root.num;
 //            cout <<
-            fileIndex.seekg(index_root);
+            fileIndex.seekg(basicManager.index_root);
             fileIndex.write(reinterpret_cast<char *>(&root), sizeof(Block));
         }
-        void Get(const K &left,const K &right, std::vector<S> &v) {
+        void Get(const K &left,const K &right, vector<S> &v) {
             v.clear();
             find_list_b(root, left,right, v);
         }
