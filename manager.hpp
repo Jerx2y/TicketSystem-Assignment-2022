@@ -29,9 +29,10 @@ private:
     lailai::map<Varchar, Train> train_;
     lailai::map<std::pair<Varchar, Date>, dayTrain> daytrain_;
     lailai::map<int, Order> order_;
-    lailai::map<Varchar, stationTrain> stationtrain_;
-    lailai::map<std::pair<Varchar, Date>, int> pending_order_;
-    lailai::map<Varchar, int> user_order_;
+
+    lailai::map<std::pair<Varchar, Varchar>, stationTrain> stationtrain_;
+    lailai::map<std::pair<std::pair<Varchar, Date>, int>, int> pending_order_;
+    lailai::map<std::pair<Varchar, int>, int> user_order_;
     lailai::map<int, int> constant;
 
     int ordercnt, usercnt;
@@ -211,7 +212,7 @@ public:
             stmp.startDate = tmp.startDate;
             stmp.endDate = tmp.endDate;
             stmp.startTime = tmp.startTime;
-            stationtrain_.Insert(Varchar(tmp.stationID[i]), stmp);
+            stationtrain_.Insert(std::make_pair(Varchar(tmp.stationID[i]), tmp.trainIDhash), stmp);
         }
 
         cout << '0' << endl;
@@ -255,8 +256,8 @@ public:
         std::vector<stationTrain> strain, ttrain;
         std::vector<ticketTrain> atrain;
 
-        stationtrain_.Get(Varchar(info.get('s')), strain);
-        stationtrain_.Get(Varchar(info.get('t')), ttrain);
+        stationtrain_.Get(std::make_pair(Varchar(info.get('s')), 0), std::make_pair(Varchar(info.get('s')), SIZE_MAX), strain);
+        stationtrain_.Get(std::make_pair(Varchar(info.get('t')), 0), std::make_pair(Varchar(info.get('t')), SIZE_MAX), ttrain);
 
         if (strain.empty() || ttrain.empty())
             return cout << 0 << endl, "okk";
@@ -276,7 +277,6 @@ public:
             if (si.leaveTime > ttrain[j].leaveTime) continue;
             Date startDay(((today.now + (si.startTime + si.leaveTime) % 1440 - si.leaveTime) / 1440) * 1440); // 始发站发车日期
 
-
             if (startDay < si.startDate || si.endDate < startDay) continue;
 
             ticketTrain tt;
@@ -286,7 +286,7 @@ public:
             tt.arriveTime = startDay + si.startTime + ttrain[j].arriveTime;
             tt.first = info.get('p') == "cost" ? tt.price : tt.arriveTime - tt.leaveTime;
             dayTrain dt;
-            daytrain_.Getone(std::make_pair(Varchar(si.trainID), startDay), dt);
+            bool tmp = daytrain_.Getone(std::make_pair(si.trainIDhash, startDay), dt);
 
             tt.seat = dt.getmin(si.idx, ttrain[j].idx);
             atrain.push_back(tt);
@@ -307,14 +307,19 @@ public:
     std::string query_transfer(const Cmd &info) {
         std::vector<stationTrain> strain, ttrain;
         
-        stationtrain_.Get(Varchar(info.get('s')), strain);
-        stationtrain_.Get(Varchar(info.get('t')), ttrain);
+        stationtrain_.Get(std::make_pair(Varchar(info.get('s')), 0), std::make_pair(Varchar(info.get('s')), SIZE_MAX), strain);
+        stationtrain_.Get(std::make_pair(Varchar(info.get('t')), 0), std::make_pair(Varchar(info.get('t')), SIZE_MAX), ttrain);
 
         Date today;
         today.set_mmdd(info.get('d'));
 
         transferTrain ans;
         ans.first = INF;
+
+        Train *ttt = new Train[ttrain.size()];
+
+        for (int i = 0; i < ttrain.size(); ++i)
+            train_.Getone(ttrain[i].trainIDhash, ttt[i]);
 
         for (int i = 0; i < strain.size(); ++i) {
             Date startDay(((today.now + (strain[i].startTime + strain[i].leaveTime) % 1440 - strain[i].leaveTime) / 1440) * 1440); // 车 1 从始发站发车的日期
@@ -326,8 +331,8 @@ public:
 
             for (int j = 0; j < ttrain.size(); ++j) {
                 if (strain[i].trainIDhash == ttrain[j].trainIDhash) continue;
-                Train tt;
-                train_.Getone(ttrain[j].trainIDhash, tt);
+                const Train &tt = ttt[j];
+                // train_.Getone(ttrain[j].trainIDhash, tt);
                 const int &ti = ttrain[j].idx;
 
                 for (int sk = si + 1; sk < st.stationNum; ++sk)
@@ -373,6 +378,8 @@ public:
                     }
             }
         }
+
+        delete []ttt;
 
         if (ans.first == INF)
             return std::cout << 0 << std::endl, "okk";
@@ -443,14 +450,14 @@ public:
             daytrain_.Modify(std::make_pair(Varchar(t.trainIDhash), startDay), dt);
             porder.set(++ordercnt, startDay, info.get('i').c_str(), si, ti, info.get('f').c_str(), info.get('t').c_str(), 0, leavingTime, arrivingTime, prices, buyNum);
             order_.Insert(ordercnt, porder);
-            pending_order_.Insert(std::make_pair(Varchar(t.trainIDhash), startDay), ordercnt);
-            user_order_.Insert(Varchar(info.get('u')), ordercnt);
+            pending_order_.Insert(std::make_pair(std::make_pair(Varchar(t.trainIDhash), startDay), ordercnt), ordercnt);
+            user_order_.Insert(std::make_pair(Varchar(info.get('u')), ordercnt), ordercnt);
             std::cout << prices << std::endl;
         } else if (info.get('q') == "true") {
             porder.set(++ordercnt, startDay, info.get('i').c_str(), si, ti, info.get('f').c_str(), info.get('t').c_str(), 1, leavingTime, arrivingTime, prices, buyNum);
             order_.Insert(ordercnt, porder);
-            pending_order_.Insert(std::make_pair(Varchar(t.trainIDhash), startDay), ordercnt);
-            user_order_.Insert(Varchar(info.get('u')), ordercnt);
+            pending_order_.Insert(std::make_pair(std::make_pair(Varchar(t.trainIDhash), startDay), ordercnt), ordercnt);
+            user_order_.Insert(std::make_pair(Varchar(info.get('u')), ordercnt), ordercnt);
             std::cout << "queue" << std::endl;
         } else return "buy_ticket: buy ticket failed";
 
@@ -461,7 +468,9 @@ public:
         if (!online.count(info.get('u')))
             return "query_order: user not online";
         std::vector<int> range;
-        user_order_.Get(Varchar(info.get('u')), range);
+        user_order_.Get(std::make_pair(Varchar(info.get('u')), 0),
+                        std::make_pair(Varchar(info.get('u')), INF),
+                        range);
         std::cout << range.size() << std::endl;
         for (int i = range.size() - 1; i >= 0; --i) {
             Order o;
@@ -483,7 +492,9 @@ public:
             return "refund_ticket: user not online";
 
         std::vector<int> range;
-        user_order_.Get(Varchar(info.get('u')), range);
+        user_order_.Get(std::make_pair(Varchar(info.get('u')), 0),
+                        std::make_pair(Varchar(info.get('u')), INF),
+                        range);
         int idx = info.have('n') ? strtoint(info.get('n')) : 1;
         
         idx = range.size() - idx;
@@ -502,7 +513,9 @@ public:
             daytrain_.Getone(std::make_pair(Varchar(o.trainID), o.day), dt);
             dt.minus(o.ids, o.idt, -o.num);
             std::vector<int> range2;
-            pending_order_.Get(std::make_pair(Varchar(o.trainID), o.day), range2);
+            pending_order_.Get(std::make_pair(std::make_pair(Varchar(o.trainID), o.day), 0),
+                               std::make_pair(std::make_pair(Varchar(o.trainID), o.day), INF),
+                               range2);
             for (auto it2 = range2.begin(); it2 != range2.end(); ) {
                 Order to;
                 order_.Getone(*it2, to);
@@ -514,7 +527,7 @@ public:
                     dt.minus(to.ids, to.idt, to.num);
                     to.status = 0;
                     order_.Modify(*it2, to);
-                    pending_order_.Remove(std::make_pair(Varchar(o.trainID), o.day), *it2);
+                    pending_order_.Remove(std::make_pair(std::make_pair(Varchar(o.trainID), o.day), *it2), *it2);
                 } else ++it2;
             }
             daytrain_.Modify(std::make_pair(Varchar(o.trainID), o.day), dt);

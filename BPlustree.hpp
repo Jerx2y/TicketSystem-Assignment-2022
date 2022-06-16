@@ -11,7 +11,7 @@ using std::fstream;
 namespace lailai {
     template<class K,class S, class Compare = std::less<K>> class BPT;
     template<class K, class S, class Compare = std::less<K>,class Com=std::less<S>>
-    class map{
+    class map{//可以直接在map层面做缓存，用linkedehashmap实现；查找key对应的value的时候可以直接从内存里读取；
     private:
         Compare compare;
         Com com;
@@ -49,20 +49,98 @@ namespace lailai {
             fileData.write(reinterpret_cast<char *>(&totalNode), sizeof(int));
             fileData.close();
         }
-
-        void Get(const K &key,std::vector<S> &v){
-            v.clear();
-            vector<ll> v_;
-            bpt.Get(key,v_);
-            for(auto i = v_.begin(); i!= v_.end();++i){
-                ll index = *i;
-                Node n;
-                fileData.seekg(index);
-                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
-                v.push_back(n.value_);
+        class Cache{
+            //link_hash_map
+        private:
+            class node{
+                K key_;
+                S value_;
+                node *nxt_= nullptr;
+                node(const K &key,const S &value,node *p){
+                    key_=key;
+                    value_=value;
+                    nxt_=p;
+                }
+            };
+            const int Size = 103;
+            int total = 0;
+            Node **array[103];
+//            int num[103];
+            std::hash<K> hash;
+            Compare compare;
+        public:
+            Cache(){
+                for(int i = 0; i < Size; ++i){
+                    array[i]= nullptr;
+                }
             }
-        }
+            bool find(const K &key , S &value){
+                int index = hash(key)%Size;
+                if(array[index]!= nullptr){
+                    node *p = array[index];
+                    while(p->next!= nullptr&&(compare(p->key_,key)||compare(key,p->key_)))p=p->nxt_;
+                    if(!compare(p->key_,key)&&!compare(key,p->key_)){
+                        value = p->value_;
+                        return true;
+                    }
+                    return false;
+                }
+                return false;
+            }
+            void set(const K &key, S &value){
+                int index = hash(key)%Size;
+                if(array[index]== nullptr){
+                    node *p=new node(key,value, nullptr);
+                    array[index]=p;
+                    ++total;
+                }
+                else{
+                    node *p=array[index];
+                    while(p->nxt_!= nullptr&&(compare(p->key_,key)||compare(key,p->key_)))p=p->nxt_;
+                    if(!compare(p->key_,key)&&!compare(key,p->key_))p->value_=value;
+                    else{
+                        p->nxt_=new node(key,value, nullptr);
+                        ++total;
+                    }
+                }
+                if(total > Size){
+                    int i;
+                    for(i=0;i<Size;++i)if(array[i]!= nullptr)break;
+                    node *p=array[i];
+                    array[i]=p->nxt_;
+                    delete p;
+                    --total;
+                }
+            }
+            void remove(const K &key, const S &value){
+                int index = hash(key)%Size;
+                if(array[index]!= nullptr){
+                    node *p=array[index];
+                    node *q=array[index];
+                    while(p->nxt_!= nullptr&&(compare(p->key_,key)||compare(key,p->key_))){
+                        p=p->nxt_;
 
+                    }
+                    if(!compare(p->key_,key)&&!compare(key,p->key_)){
+
+                    }
+                }
+            }
+
+
+        };
+        void Get(const K &left,const K &right ,std::vector<S> &v){
+            v.clear();
+//            vector<ll> v_;
+            bpt.Get(left,right,v);
+//            for(auto i = v.begin(); i!= v.end();++i){
+//                ll index = *i;
+//                Node n;
+//                fileData.seekg(index);
+//                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
+//                v.push_back(n.value_);
+//            }
+        }
         bool Getone(const K &key, S &value){
 //            vector<Node> v;
 //            v.clear();
@@ -78,27 +156,31 @@ namespace lailai {
 //            if(v.empty())return false;
 //            value = v[0].value_;
 //            return true;
-ll index;
-            bool flag = bpt.Getone(key,index);
+//ll index;
+            bool flag = bpt.Getone(key,value);
             if(!flag)return false;
-            Node n;
-            fileData.seekg(index);
-            fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
-            value=n.value_;
+//            Node n;
+//            fileData.seekg(index);
+//            fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
+//            value=n.value_;
             return true;
         }
-
         int count(const K &key) {
-            S value;
-            return Getone(key, value);
+            S v;
+            return bpt.Getone(key, v);
+            //return v.size();
         }
-
         void Modify(const K &key, const S &value) { // need to be changed
-            Remove(key, value);
-            Insert(key, value);
-
+//            ll index = 9223372036854775807;
+//            bool flag = bpt.Getone(key,index);
+//            if(!flag)return;
+//            Node n(key,value);
+//            fileData.seekg(index);
+//            fileData.write(reinterpret_cast<char *>(&n), sizeof(Node));
+//            Remove(key, value);
+//            Insert(key, value);
+                bpt.Modify(key,value);
         }
-
         ll add(const Node &n){
             ++totalNode;
             fileData.seekg(0);
@@ -109,34 +191,35 @@ ll index;
             return index;
         }
         void Insert(const K &key,const S &value){
-            Node n(key,value);
-            ll index = add(n);
-            bpt.Insert(key,index);
+//            Node n(key,value);
+//            ll index = add(n);
+            bpt.Insert(key,value);
         }
         bool Remove(const K &key, const S &value){
-            vector<ll> v;
-            bpt.Get(key,v);
-            if(v.empty())return false;
-            for(auto i = v.begin(); i != v.end(); ++i){
-                ll index = *i;
-                Node n;
-                fileData.seekg(index);
-                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
-                if(!com(n.value_,value)&&!com(value,n.value_)){
-                    typename BPT<K,S>::Node n_(key,index);
-                    bpt.remove(n_);
-                    return true;
-                }
-            }
-            return false;
+//            vector<ll> v;
+//            Node n(key,value);
+            return bpt.Remove(key,value);
+//            if(v.empty())return false;
+//            for(auto i = v.begin(); i != v.end(); ++i){
+//                ll index = *i;
+//                Node n;
+//                fileData.seekg(index);
+//                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
+//                if(!com(n.value_,value)&&!com(value,n.value_)){
+//                    typename BPT<K,S>::Node n_(key,index);
+//                    bpt.remove(n_);
+//                    return true;
+//                }
+//            }
+//            return false;
         }
     };
     template<class K,class S,class Compare>
     class BPT {
     private:
         constexpr static int max(ll x, ll y){return (x > y) ? x : y;}
-        static constexpr int BLOCK_SIZE = max(8192/(sizeof(K)+sizeof(ll)*2),10ll);
-        static constexpr int LEAVE_SIZE = BLOCK_SIZE;
+        static constexpr int BLOCK_SIZE = max(8192/(sizeof(K)*2),10ll);
+        static constexpr int LEAVE_SIZE =max(8192/(sizeof(K)+sizeof(S)),10ll);
         static constexpr int LEAVE_SPLIT_LEFT=LEAVE_SIZE/2;
         static constexpr int BLOCK_SPLIT_LEFT=BLOCK_SIZE/2;
         static constexpr int BLOCK_MIN = BLOCK_SPLIT_LEFT/2;
@@ -144,7 +227,7 @@ ll index;
     public:
         class Node {//叶子节点内-块链-点
         public://维护第二关键字
-            ll value;
+            S value;
             K key;
         public:
             void operator=(const Node &x) {
@@ -154,19 +237,18 @@ ll index;
 
             Node() {};
 
-            Node(const K &key_, const ll &value_) : value(value_), key(key_) {
+            Node(const K &key_, const S &value_) : value(value_), key(key_) {
             };
         };
     private:
         //内嵌类
-
         class Block {//树上节点
             friend class BPT;
 
         private:
             bool isbottom = false;
             ll son[BLOCK_SIZE + 5];
-            Node key[BLOCK_SIZE + 5];
+            K key[BLOCK_SIZE + 5];
             int num = 0;
             std::pair<Block *, ll> fa;//存储父节点，内存地址
         public:
@@ -184,20 +266,18 @@ ll index;
             //read head and tail from array
             Node array[LEAVE_SIZE + 5];
         public:
-            void MergeBlock(const int &offset1, const int &offset2);
-
-
+//            void MergeBlock(const int &offset1, const int &offset2);
             Leave() {};
         };
 
         struct KVblock {
             ll file_index = 0;
-            Node key;
+            K key;
         };
 
         struct KVleave {
             ll file_index = 0;
-            Node key;
+            K key;
         };
 
         const std::string file_name;
@@ -241,7 +321,7 @@ ll index;
             return index;
         }
 
-        void modify_father(const Leave &l, const Node &key) {
+        void modify_father(const Leave &l, const K &key) {
             Block *p = l.fa.first;
 //            if(p==nullptr)cout << "debug " << key.key << endl;
             if (l.fa.second) {
@@ -256,11 +336,12 @@ ll index;
             if (p == &root)return;
             p->fa.first->key[p->fa.second] = key;
         }
+
         bool find_one_block(Node &n,const Block &b){
             if(!b.num)return false;
             int i;
             for(i = 0; i < b.num; ++i){
-                if(compare(n,b.key[i+1]))break;
+                if(com(n.key,b.key[i+1]))break;
             }
             if(b.isbottom){
                 ll son_index = b.son[i];
@@ -281,7 +362,7 @@ ll index;
             if(!l.num)return false;
             int i;
             for( i = 0; i < l.num; ++i){
-                if(compare(n,l.array[i+1]))break;
+                if(com(n.key,l.array[i+1].key))break;
             }
             if(!i)return false;
             if(!com(n.key,l.array[i].key)&&!com(l.array[i].key,n.key)){
@@ -290,22 +371,22 @@ ll index;
             }
             return false;
         }
-        bool find_one(const Node &n){
+        bool find_one(Node &n){
             return find_one_block(n,root);
         }
-        void find_list_l(const Leave &le, const K &key, std::vector<ll> &v) {
+        void find_list_l(const Leave &le, const K &left,const K &right, std::vector<S> &v) {
             for (int i = 1; i <= le.num; ++i) {
-                if (!com(le.array[i].key, key) && !com(key, le.array[i].key))v.push_back(le.array[i].value);
+                if (!com(le.array[i].key, left) && !com(right, le.array[i].key))v.push_back(le.array[i].value);//不比left小不比right大
             }
         }
 
-        void find_list_b(const Block &b, const K &key, std::vector<ll> &v) {
+        void find_list_b(const Block &b, const K &left,const K &right, std::vector<S> &v) {
             if(!b.num)return;
             if (!b.isbottom) {
 //                cout << "&&" << endl;
                 int i;
                 for (i = 0; i < b.num; ++i) {
-                    if (com(key, b.key[i + 1].key) || !com(key, b.key[i + 1].key) && !com(b.key[i + 1].key, key))
+                    if (com(left, b.key[i + 1]) || !com(left, b.key[i + 1]) && !com(b.key[i + 1], left))
                         break;//下一个位置关键字大于等于
                 }
                 while (i <= b.num) {
@@ -313,29 +394,29 @@ ll index;
                     Block son;
                     fileIndex.seekg(index_son);
                     fileIndex.read(reinterpret_cast<char *>(&son), sizeof(Block));
-                    find_list_b(son, key, v);
+                    find_list_b(son, left,right, v);
                     ++i;
-                    if (i > b.num || com(key, b.key[i].key))break;//新的位置关键字大于key
+                    if (i > b.num || com(right, b.key[i]))break;//新的位置关键字大于key
                 }
             } else {
                 int i;
                 for (i = 0; i < b.num; ++i) {
-                    if (com(key, b.key[i + 1].key) || !com(key, b.key[i + 1].key) && !com(b.key[i + 1].key, key))break;
+                    if (com(left, b.key[i + 1]) || !com(left, b.key[i + 1]) && !com(b.key[i + 1], left))break;
                 }
                 while (i <= b.num) {
                     ll index_son = b.son[i];
                     Leave son;
                     fileIndex.seekg(index_son);
                     fileIndex.read(reinterpret_cast<char *>(&son), sizeof(Leave));
-                    find_list_l(son, key, v);
+                    find_list_l(son, left,right, v);
                     ++i;
-                    if (i > b.num || com(key, b.key[i].key))break;
+                    if (i > b.num || com(right, b.key[i]))break;
                 }
             }
 
         }
 
-        void insert(const K &key, const ll &value) {
+        void insert(const K &key, const S &value) {
             Node n(key, value);
             KVblock pair_;
             if (biinsert(root, n, index_root, pair_)) {//根节点的特判
@@ -359,10 +440,10 @@ ll index;
             fileIndex.seekg(index);//移动指针到指定位置
             fileIndex.read(reinterpret_cast<char *>(&b), sizeof(Block));
             for (int i = BLOCK_SPLIT_LEFT + 2; i <= b.num; ++i) {//复制过程
-                newb.key[i - LEAVE_SPLIT_LEFT - 1] = b.key[i];
+                newb.key[i - BLOCK_SPLIT_LEFT - 1] = b.key[i];
             }
             for (int i = BLOCK_SPLIT_LEFT + 1; i <= b.num + 1; ++i) {//复制过程
-                newb.son[i - LEAVE_SPLIT_LEFT - 1] = b.son[i];
+                newb.son[i - BLOCK_SPLIT_LEFT - 1] = b.son[i];
             }
             pair.key = b.key[BLOCK_SPLIT_LEFT + 1];
             //修改元素数量
@@ -382,7 +463,7 @@ ll index;
                 b.isbottom = true;
                 ++b.num;
                 Leave l, r;
-                b.key[1] = key;
+                b.key[1] = key.key;
                 b.son[0] = add_one_leave();
                 b.son[1] = add_one_leave();
                 ++r.num;
@@ -398,7 +479,7 @@ ll index;
             int index;
             for (index = 0; index < b.num; ++index) {
                 //debug
-                if (compare(key, b.key[index + 1]))break;//下一个大于自己就取当前所在位置，退出循环
+                if (com(key.key, b.key[index + 1]))break;//下一个大于自己就取当前所在位置，退出循环
             }
             ll son_index = b.son[index];
             if (!b.isbottom) {//非叶子结点的父节点
@@ -477,7 +558,7 @@ ll index;
             for (int i = LEAVE_SPLIT_LEFT + 1; i <= le.num; ++i) {//复制过程
                 newle.array[i - LEAVE_SPLIT_LEFT] = le.array[i];
             }
-            pair.key = newle.array[1];
+            pair.key = newle.array[1].key;
             pair.file_index = add_one_leave();
             //修改元素数量
             newle.num = le.num - LEAVE_SPLIT_LEFT;
@@ -497,9 +578,9 @@ ll index;
             //----插入新的kv对
             int i;
             for (i = 0; i < le.num; ++i) {
-                if (compare(key, le.array[i + 1]))break;
+                if (com(key.key, le.array[i + 1].key))break;
             }
-            if (i && !compare(key, le.array[i]) && !compare(le.array[i], key))return false;
+            if (i && !com(key.key, le.array[i].key) && !com(le.array[i].key, key.key))return false;
             else {
                 ++le.num;
                 for (int j = le.num; j > i + 1; --j) {
@@ -507,7 +588,7 @@ ll index;
                 }
                 le.array[i + 1] = key;
                 if (!i) {
-                    modify_father(le, key);
+                    modify_father(le, key.key);
                 }
             }
             //-----插入结束-----是否裂块
@@ -591,7 +672,7 @@ ll index;
 //            cout << "\n----------"<<endl;
             int i;
             for (i = 0; i < b.num; ++i) {
-                if(compare(key,b.key[i+1]))break;
+                if(com(key.key,b.key[i+1]))break;
             }
             ll index_son = b.son[i];
             if (!b.isbottom) {
@@ -725,7 +806,7 @@ ll index;
             for (int i = 1; i <= rle.num; ++i) {
                 rle.array[i] = rle.array[i + 1];
             }
-            le.fa.first->key[le.fa.second+1]=rle.array[1];
+            le.fa.first->key[le.fa.second+1]=rle.array[1].key;
         }
 
         void get_one_child_l(Leave &le, Leave &lle) {
@@ -733,7 +814,7 @@ ll index;
             lle.num--;
             for(int i = le.num; i > 1; --i)le.array[i]=le.array[i-1];
             le.array[1]=lle.array[lle.num+1];
-            le.fa.first->key[le.fa.second]=le.array[1];
+            le.fa.first->key[le.fa.second]=le.array[1].key;
         }
 
         void merge_r(Leave &le, Leave &rle) {
@@ -769,7 +850,7 @@ ll index;
                 l.array[j] = l.array[j + 1];
             }
             if(i==1){
-                modify_father(l,l.array[1]);
+                modify_father(l,l.array[1].key);
             }
             l.num--;
             if (l.num < LEAVE_MIN) {
@@ -850,6 +931,45 @@ ll index;
             }
 
         }
+
+        bool modify(const Block &root,const K &key,const S &value){
+//            std::cout << "BLOCKbegin " << b.num<<' '<<b.isbottom << std::endl;
+            Block b=root;
+            if(!b.num)return false;
+            while(!b.isbottom){
+                int index;
+                for (index = 0; index < b.num; ++index)if (com(key, b.key[index + 1]))break;//下一个大于自己就取当前所在位置，退出循环
+//                std::cout << "INDEX " << index << std::endl;
+                ll index_son = b.son[index];
+                fileIndex.seekg(index_son);
+                fileIndex.read(reinterpret_cast<char *>(&b), sizeof(Block));
+            }
+            int index;
+//            std::cout << "BLOCK " << b.num<<' '<<b.isbottom << std::endl;
+            for (index = 0; index < b.num; ++index)if(com(key, b.key[index + 1])){
+//                std::cout << "BLOCK " << b.key[index + 1] << std::endl;
+                    break;//下一个大于自己就取当前所在位置，退出循环
+            }
+//            std::cout << "INDEX " << index << std::endl;
+            ll index_son = b.son[index];
+            Leave le;
+            fileIndex.seekg(index_son);
+            fileIndex.read(reinterpret_cast<char *>(&le), sizeof(Leave));
+//            std::cout << "KEY " << key<<' ' << le.num << std::endl;
+            for (index = 0; index < le.num; ++index){
+//                std::cout << "COMPARE " << key << le.array[index+1].key << ' ' << com(key, le.array[index + 1].key) << std::endl;
+                if (com(key, le.array[index + 1].key)){
+                    break;//下一个大于自己就取当前所在位置，退出循环
+                }
+            }
+            if(!index)return false;
+//            std::cout << "KEY_LEAVE " << key<<' ' << le.array[index].key<<' '<<index << std::endl;
+            if(!com(le.array[index].key,key)&&!com(key,le.array[index].key))le.array[index].value=value;
+            else return false;
+            fileIndex.seekg(index_son);
+            fileIndex.write(reinterpret_cast<char *>(&le), sizeof(Leave));
+            return true;
+        }
     public:
 
         BPT(const std::string &file) : file_name(file) {
@@ -897,7 +1017,7 @@ ll index;
 //            Node key(key_, 1);
             int i;
             for(i = 0; i<root.num; ++i){
-                if(compare(key_,root.key[i+1]))break;
+                if(com(key_.key,root.key[i+1]))break;
             }
             //debug
 //            cout <<"---root----"<< endl;
@@ -928,7 +1048,7 @@ ll index;
                             ++root.num;
                             root.son[1]=root.son[0];
                             root.son[0]=index=add_one_leave();
-                            root.key[1]=l.array[1];
+                            root.key[1]=l.array[1].key;
                             fileIndex.seekg(index);
                             fileIndex.write(reinterpret_cast<char *>(&r), sizeof(Leave));
                         }
@@ -971,31 +1091,31 @@ ll index;
             fileIndex.seekg(index_root);
             fileIndex.write(reinterpret_cast<char *>(&root), sizeof(Block));
         }
-        void Get(const K &key, std::vector<ll> &v) {
+        void Get(const K &left,const K &right, std::vector<S> &v) {
             v.clear();
-            find_list_b(root, key, v);
+            find_list_b(root, left,right, v);
         }
 
-        bool Getone(const K &key,ll &value){
+        bool Getone(const K &key,S &value){
 //            vector<ll> v;
 //            v.clear();
 //            find_list_b(root, key, v);
 //            if(v.empty())return false;
 //            value= v[0];
 //            return true;
-ll index = 223372036854775807;
-Node n(key,index);
+//            ll index = 223372036854775807;
+            Node n(key,value);
             bool flag = find_one_block(n,root);
             if(!flag)return false;
             value = n.value;
             return true;
         }
 
-        void Insert(const K &key, const ll &value) {
+        void Insert(const K &key, const S &value) {
             insert(key, value);
         }
 
-        bool Remove(const K &key,ll value) {
+        bool Remove(const K &key,S value) {
             Node n(key,value);
             if(!find_one(n))return false;
             remove(n);
@@ -1006,7 +1126,10 @@ Node n(key,index);
 //          fileIndex.close();
 //          fileIndex.open(file_name,ios::in|ios::out|ios::binary);
         }
-    };
 
+        bool Modify(const K &key,const S &value){
+        return modify(root,key,value);
+        }
+    };
 }
 #endif //TRAINTICKET2022_BPLUSTREE_HPP
