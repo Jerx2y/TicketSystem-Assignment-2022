@@ -1,9 +1,9 @@
 #ifndef TRAINTICKET2022_BPLUSTREE_HPP
 #define TRAINTICKET2022_BPLUSTREE_HPP
 #include<fstream>
+
 #include "utils.hpp"
-//裂块 =5的时候，分裂成两个各有两个块的情况
-//并块 =2的时候，与左儿子或者右儿子并块
+
 using ll = size_t;
 using sjtu::vector;
 using std::ios;

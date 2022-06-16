@@ -5,7 +5,6 @@
 #ifndef TICKET_SYSTEM_VECTOR_HPP
 #define TICKET_SYSTEM_VECTOR_HPP
 
-#include "exception.hpp"
 #include <climits>
 #include <cstddef>
 
@@ -73,8 +72,8 @@ namespace sjtu
             // if these two iterators point to different vectors, throw invaild_iterator.
 
             int operator-(const iterator &rhs) const {
-                if (beg != rhs.beg)
-                    throw Exception("vector.h: invalid_iterator");
+                // if (beg != rhs.beg)
+                //     throw Exception("vector.h: invalid_iterator");
                 return pos - rhs.pos;
             }
 
@@ -170,8 +169,8 @@ namespace sjtu
             // if these two iterators point to different vectors, throw invaild_iterator.
 
             int operator-(const const_iterator &rhs) const {
-                if (beg != rhs.beg)
-                    throw Exception("vector.h: invalid_iterator");
+                // if (beg != rhs.beg)
+                //     throw Exception("vector.h: invalid_iterator");
                 return pos - rhs.pos;
             }
 
@@ -283,14 +282,14 @@ namespace sjtu
          */
 
         T & at(const size_t &pos) {
-            if (pos < 0 || pos >= size_)
-                throw Exception("vector.h: index_out_of_bound");
+            // if (pos < 0 || pos >= size_)
+            //     throw Exception("vector.h: index_out_of_bound");
             return arr_[pos];
         }
 
         const T & at(const size_t &pos) const {
-            if (pos < 0 || pos >= size_)
-                throw Exception("vector.h: index_out_of_bound");
+            // if (pos < 0 || pos >= size_)
+            //     throw Exception("vector.h: index_out_of_bound");
             return arr_[pos];
         }
 
@@ -302,14 +301,14 @@ namespace sjtu
          */
 
         T & operator[](const size_t &pos) {
-            if (pos < 0 || pos >= size_)
-                throw Exception("vector.h: index_out_of_bound");
+            // if (pos < 0 || pos >= size_)
+            //     throw Exception("vector.h: index_out_of_bound");
             return arr_[pos];
         }
 
         const T & operator[](const size_t &pos) const {
-            if (pos < 0 || pos >= size_)
-                throw Exception("vector.h: index_out_of_bound");
+            // if (pos < 0 || pos >= size_)
+                // throw Exception("vector.h: index_out_of_bound");
             return arr_[pos];
         }
 
@@ -319,8 +318,8 @@ namespace sjtu
          */
 
         const T & front() const {
-            if (!size_)
-                throw Exception("container_is_empty");
+            // if (!size_)
+                // throw Exception("container_is_empty");
             return arr_[0];
         }
 
@@ -330,8 +329,8 @@ namespace sjtu
          */
 
         const T & back() const {
-            if (!size_)
-                throw Exception("container_is_empty");
+            // if (!size_)
+                // throw Exception("container_is_empty");
             return arr_[size_ - 1];
         }
 
@@ -401,8 +400,8 @@ namespace sjtu
          */
 
         iterator insert(const size_t &ind, const T &value) {
-            if (ind > size_)
-                throw Exception("index_out_of_bound");
+            // if (ind > size_)
+                // throw Exception("index_out_of_bound");
             if (size_ == all_) doubleLength();
             ++size_;
             for (int i = size_ - 1; i > ind; --i)
@@ -433,8 +432,8 @@ namespace sjtu
          */
 
         iterator erase(const size_t &ind) {
-            if (ind >= size_)
-                throw Exception("index_out_of_bound");
+            // if (ind >= size_)
+                // throw Exception("index_out_of_bound");
             arr_[ind].~T();
             for (int i = ind; i < size_ - 1; ++i)
                 arr_[i] = arr_[i + 1];
@@ -458,8 +457,8 @@ namespace sjtu
          */
 
         void pop_back() {
-            if (!size_)
-                throw Exception("container_is_empty");
+            // if (!size_)
+                // throw Exception("container_is_empty");
             arr_[size_- 1].~T();
             --size_;
         }

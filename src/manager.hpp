@@ -6,18 +6,14 @@
 #include <iostream>
 #include <cstring>
 
-#include "user.hpp"
-#include "train.hpp"
-#include "order.hpp"
-#include "linked_hashmap.hpp"
-#include "utils.hpp"
-#include "storage.hpp"
-#include "BPlustree.hpp"
-#include "vector.hpp"
-
-// TODO
-#include <string>
-#include <algorithm> // sort
+#include "../lib/user.hpp"
+#include "../lib/train.hpp"
+#include "../lib/order.hpp"
+#include "../lib/linked_hashmap.hpp"
+#include "../lib/utils.hpp"
+#include "../lib/storage.hpp"
+#include "../lib/BPlustree.hpp"
+#include "../lib/vector.hpp"
 
 using std::cout;
 using std::endl;

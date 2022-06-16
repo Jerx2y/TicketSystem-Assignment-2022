@@ -5,9 +5,6 @@
 
 #include "utils.hpp"
 
-// 一个优化是将 order 的 status 存在外面
-// ↑ 好像不太行
-
 struct Order {
     char trainID[TRAINID_LEN];
     char startStation[STATIONID_LEN];

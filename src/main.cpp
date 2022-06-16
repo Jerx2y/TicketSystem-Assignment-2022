@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "utils.hpp"
+#include "../lib/utils.hpp"
 #include "manager.hpp"
 
 int main() {
@@ -52,7 +52,6 @@ int main() {
         
         if (result != "okk") {
             std::cout << -1 << std::endl;
-            // std::cout << "__DEBUG " << result << std::endl; 
         }
 
         info.reset();

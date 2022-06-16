@@ -1,13 +1,10 @@
-/**
- * implement a container like std::linked_hashmap
- */
 #ifndef TICKET_SYSTEM_HASHMAP_HPP
 #define TICKET_SYSTEM_HASHMAP_HPP
 
 // only for std::equal_to<T> and std::hash<T>
 #include <functional>
 #include <cstddef>
-#include "exception.hpp"
+
 #include "utils.hpp"
 
 template<
@@ -131,14 +128,14 @@ public:
 		size_t tmp = Hash()(key);
 		for (node *p = head[tmp % Capacity].next; p; p = p->next)
 			if (Equal()(p->val->first, key)) return p->val->second;
-		throw Exception("index_out_of_bound");
+		// throw Exception("index_out_of_bound");
 	}
 
 	const T & at(const Key &key) const {
 		size_t tmp = Hash()(key);
 		for (node *p = head[tmp % Capacity].next; p; p = p->next)
 			if (Equal()(p->val->first, key)) return p->val->second;
-		throw Exception("index_out_of_bound");
+		// throw Exception("index_out_of_bound");
 	}
  
 	/**
