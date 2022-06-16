@@ -53,8 +53,6 @@ int main() {
         
         if (result != "okk") {
             std::cout << -1 << std::endl;
-            if (TIMESTAMP == "[10418]")
-                std::cout << result << std::endl;
         }
 
         info.reset();

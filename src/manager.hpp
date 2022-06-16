@@ -441,7 +441,7 @@ public:
         daytrain_.Getone(t.trainIDhash ^ startDay.now, dt);
     
         Order porder;
-        int prices = (t.prices[ti] - t.prices[si]) * buyNum;
+        int prices = (t.prices[ti] - t.prices[si]);
 
         if (dt.getmin(si, ti) >= buyNum) {
             dt.minus(si, ti, buyNum);
@@ -450,7 +450,7 @@ public:
             int idx = order_.write(porder);
             pending_order_.Insert(std::make_pair(std::make_pair(Varchar(t.trainIDhash), startDay), idx), idx);
             user_order_.Insert(std::make_pair(Varchar(info.get('u')), idx), idx);
-            std::cout << prices << std::endl;
+            std::cout << 1ll * prices * buyNum << std::endl;
         } else if (info.get('q') == "true") {
             porder.set(startDay, info.get('i').c_str(), si, ti, info.get('f').c_str(), info.get('t').c_str(), 1, leavingTime, arrivingTime, prices, buyNum);
             int idx = order_.write(porder);
@@ -479,7 +479,7 @@ public:
             std::cout << o.trainID << ' ' \
                       << o.startStation << ' ' << o.leavingTime.get_mmddhrmi() << " -> " \
                       << o.endStation << ' ' << o.arrivingTime.get_mmddhrmi() << ' ' \
-                      << o.prices / o.num << ' ' << o.num << std::endl;
+                      << o.prices << ' ' << o.num << std::endl;
         }
     
         return "okk";
