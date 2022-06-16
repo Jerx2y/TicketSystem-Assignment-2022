@@ -10,12 +10,12 @@
 #include "order.hpp"
 #include "linked_hashmap.hpp"
 #include "utils.hpp"
+#include "storage.hpp"
 #include "BPlustree.hpp"
 
 // TODO
 #include <string>
 #include <vector>
-#include <map>
 #include <algorithm> // sort
 
 using std::cout;
@@ -28,42 +28,27 @@ private:
     lailai::map<Varchar, User> user_;
     lailai::map<Varchar, Train> train_;
     lailai::map<std::pair<Varchar, Date>, dayTrain> daytrain_;
-    lailai::map<int, Order> order_;
 
     lailai::map<std::pair<Varchar, Varchar>, stationTrain> stationtrain_;
     lailai::map<std::pair<std::pair<Varchar, Date>, int>, int> pending_order_;
     lailai::map<std::pair<Varchar, int>, int> user_order_;
-    lailai::map<int, int> constant;
-
-    int ordercnt, usercnt;
+    Storage<Order> order_;
+    int usercnt;
 
 public:
 
     Manager() : user_("user"),//, 0),
                 train_("train"),//, 1),
                 daytrain_("daytrain"),//, 1),
-                order_("order"),//, 0),
+                order_("order", 1),//, 0),
                 stationtrain_("stationtrain"),//, 0),
                 pending_order_("pendingorder"),//, 0),
-                user_order_("userorder"),//, 0),
-                constant("constant") {//, 0) {
-        if (!constant.count(1)) {
-            constant.Insert(1, ordercnt = 0);
-            constant.Insert(2, usercnt = 0);
-        } else {
-            constant.Getone(1, ordercnt);
-            constant.Getone(2, usercnt);
-        }
+                user_order_("userorder") { //, 0), {
+        order_.get_info(usercnt, 1);
     }
 
     ~Manager() {
-        int tmp;
-        constant.Getone(1, tmp);
-        constant.Remove(1, tmp);
-        constant.Insert(1, ordercnt);
-        constant.Getone(2, tmp);
-        constant.Remove(2, tmp);
-        constant.Insert(2, usercnt);
+        order_.write_info(usercnt, 1);
     }
 
     std::string add_user(Cmd info) {
@@ -448,16 +433,16 @@ public:
         if (dt.getmin(si, ti) >= buyNum) {
             dt.minus(si, ti, buyNum);
             daytrain_.Modify(std::make_pair(Varchar(t.trainIDhash), startDay), dt);
-            porder.set(++ordercnt, startDay, info.get('i').c_str(), si, ti, info.get('f').c_str(), info.get('t').c_str(), 0, leavingTime, arrivingTime, prices, buyNum);
-            order_.Insert(ordercnt, porder);
-            pending_order_.Insert(std::make_pair(std::make_pair(Varchar(t.trainIDhash), startDay), ordercnt), ordercnt);
-            user_order_.Insert(std::make_pair(Varchar(info.get('u')), ordercnt), ordercnt);
+            porder.set(startDay, info.get('i').c_str(), si, ti, info.get('f').c_str(), info.get('t').c_str(), 0, leavingTime, arrivingTime, prices, buyNum);
+            int idx = order_.write(porder);
+            pending_order_.Insert(std::make_pair(std::make_pair(Varchar(t.trainIDhash), startDay), idx), idx);
+            user_order_.Insert(std::make_pair(Varchar(info.get('u')), idx), idx);
             std::cout << prices << std::endl;
         } else if (info.get('q') == "true") {
-            porder.set(++ordercnt, startDay, info.get('i').c_str(), si, ti, info.get('f').c_str(), info.get('t').c_str(), 1, leavingTime, arrivingTime, prices, buyNum);
-            order_.Insert(ordercnt, porder);
-            pending_order_.Insert(std::make_pair(std::make_pair(Varchar(t.trainIDhash), startDay), ordercnt), ordercnt);
-            user_order_.Insert(std::make_pair(Varchar(info.get('u')), ordercnt), ordercnt);
+            porder.set(startDay, info.get('i').c_str(), si, ti, info.get('f').c_str(), info.get('t').c_str(), 1, leavingTime, arrivingTime, prices, buyNum);
+            int idx = order_.write(porder);
+            pending_order_.Insert(std::make_pair(std::make_pair(Varchar(t.trainIDhash), startDay), idx), idx);
+            user_order_.Insert(std::make_pair(Varchar(info.get('u')), idx), idx);
             std::cout << "queue" << std::endl;
         } else return "buy_ticket: buy ticket failed";
 
@@ -474,7 +459,7 @@ public:
         std::cout << range.size() << std::endl;
         for (int i = range.size() - 1; i >= 0; --i) {
             Order o;
-            order_.Getone(range[i], o);
+            order_.read(o, range[i]);
             if (o.status == 0) std::cout << "[success] ";
             if (o.status == 1) std::cout << "[pending] ";
             if (o.status == 2) std::cout << "[refunded] ";
@@ -503,7 +488,7 @@ public:
             return "refund_ticket: -n must > 0";
 
         Order o;
-        order_.Getone(range[idx], o);
+        order_.read(o, range[idx]);
         
         if (o.status == 2)
             return "refund_ticket: order has been refunded";
@@ -518,7 +503,7 @@ public:
                                range2);
             for (auto it2 = range2.begin(); it2 != range2.end(); ) {
                 Order to;
-                order_.Getone(*it2, to);
+                order_.read(to, *it2);
                 if (to.status != 1) {
                     ++it2;
                     continue;
@@ -526,7 +511,7 @@ public:
                 if (dt.getmin(to.ids, to.idt) >= to.num) {
                     dt.minus(to.ids, to.idt, to.num);
                     to.status = 0;
-                    order_.Modify(*it2, to);
+                    order_.update(to, *it2);
                     pending_order_.Remove(std::make_pair(std::make_pair(Varchar(o.trainID), o.day), *it2), *it2);
                 } else ++it2;
             }
@@ -534,7 +519,7 @@ public:
         }
 
         o.status = 2;
-        order_.Modify(range[idx], o);
+        order_.update(o, range[idx]);
 
         std::cout << '0' << std::endl;
 
@@ -548,7 +533,7 @@ public:
     std::string clean() {
         std::system("rm -f *.idx");
         std::system("rm -f *.dat");
-        ordercnt = usercnt = 0;
+        usercnt = 0;
         return "okk";
     }
 

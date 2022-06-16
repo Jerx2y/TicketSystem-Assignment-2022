@@ -4,8 +4,8 @@
 #include <iostream>
 
 constexpr int ZH = 3; // 中文字符所占字节数
-constexpr int EPS = 3;
-constexpr int STATION_NUM = 100 + EPS;
+constexpr int EPS = 1;
+constexpr int STATION_NUM = 100;
 constexpr int TRAINID_LEN = 20 + EPS;
 constexpr int STATIONID_LEN = ZH * 10 + EPS;
 constexpr int USERNAME_LEN = 20 + EPS;

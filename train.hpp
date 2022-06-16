@@ -12,7 +12,7 @@ public:
     size_t trainIDhash;
     int stationNum;
     int seatNum;
-    char stationID[STATION_NUM][STATIONID_LEN]; // 储存每个站的中文名，假设每个汉字占 4 字节 
+    char stationID[STATION_NUM][STATIONID_LEN]; // 储存每个站的中文名，假设每个汉字占 3 字节 
     int prices[STATION_NUM]; // 储存站 i 到站 i+1 的票价 
     int startTime; // 始发站发车的时间离当天 0 点经过的分钟数
     int arriveTime[STATION_NUM], leaveTime[STATION_NUM]; // 第 i 站的到达和发车时间
