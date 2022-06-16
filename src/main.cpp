@@ -11,8 +11,7 @@ int main() {
     while (readline(opt, timestamp, info)) {
         std::string result;
 
-        if (opt != "offline")
-            cout << timestamp << ' ';
+        cout << timestamp << ' ';
 
         if (opt == "add_user")
             result = sys.add_user(info);
@@ -42,6 +41,8 @@ int main() {
             result = sys.login(info);
         if (opt == "logout")
             result = sys.logout(info);
+        if (opt == "rollback")
+            result = sys.rollback(info);
         if (opt == "clean")
             result = sys.clean();
         if (opt == "exit")
@@ -52,6 +53,8 @@ int main() {
         
         if (result != "okk") {
             std::cout << -1 << std::endl;
+            if (TIMESTAMP == "[10418]")
+                std::cout << result << std::endl;
         }
 
         info.reset();

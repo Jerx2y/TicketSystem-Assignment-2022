@@ -1,8 +1,11 @@
-#ifndef TRAINTICKET2022_BPLUSTREE_HPP
-#define TRAINTICKET2022_BPLUSTREE_HPP
+#ifndef TICKET_SYSTEM_BPLUSTREE_HPP
+#define TICKET_SYSTEM_BPLUSTREE_HPP
 #include<fstream>
+#include<cstring>
 
 #include "utils.hpp"
+#include "storage.hpp"
+#include "rollback.hpp"
 
 using ll = size_t;
 using sjtu::vector;
@@ -13,6 +16,21 @@ namespace lailai {
     template<class K, class S, class Compare = std::less<K>,class Com=std::less<S>>
     class map{//可以直接在map层面做缓存，用linkedehashmap实现；查找key对应的value的时候可以直接从内存里读取；
     private:
+        template <class Key, class Value>
+        struct RollbackNode {
+            int ti;
+            char type; // 1 : insert; 2 : delete; 3 : modify
+            Key k;
+            Value v;
+            RollbackNode() { }
+            RollbackNode(int type_, const Key &k_, const Value &v_) {
+                type = type_, k = k_, v = v_;
+                ti = strtoint(TIMESTAMP.substr(1, TIMESTAMP.size() - 2));
+            }
+        };
+
+        FileStack<RollbackNode<K, S>> stk;
+
         Compare compare;
         Com com;
 //        fstream fileData;
@@ -29,7 +47,7 @@ namespace lailai {
         };
 //        int totalNode;
     public:
-        map(const std::string &file):bpt(file+".idx"){
+        map(const std::string &file):bpt(file+".idx"), stk(file){
 //            fileData.open(file_name, ios::out | ios::in | ios::binary);
 //            if(!fileData.good()){
 //                fileData.open(file_name, ios::out);
@@ -49,86 +67,86 @@ namespace lailai {
 //            fileData.write(reinterpret_cast<char *>(&totalNode), sizeof(int));
 //            fileData.close();
         }
-        class Cache{
-            //link_hash_map
-        private:
-            class node{
-                K key_;
-                S value_;
-                node *nxt_= nullptr;
-                node(const K &key,const S &value,node *p){
-                    key_=key;
-                    value_=value;
-                    nxt_=p;
-                }
-            };
-            const int Size = 103;
-            int total = 0;
-            Node **array[103];
-//            int num[103];
-            std::hash<K> hash;
-            Compare compare;
-        public:
-            Cache(){
-                for(int i = 0; i < Size; ++i){
-                    array[i]= nullptr;
-                }
-            }
-            bool find(const K &key , S &value){
-                int index = hash(key)%Size;
-                if(array[index]!= nullptr){
-                    node *p = array[index];
-                    while(p->next!= nullptr&&(compare(p->key_,key)||compare(key,p->key_)))p=p->nxt_;
-                    if(!compare(p->key_,key)&&!compare(key,p->key_)){
-                        value = p->value_;
-                        return true;
-                    }
-                    return false;
-                }
-                return false;
-            }
-            void set(const K &key, S &value){
-                int index = hash(key)%Size;
-                if(array[index]== nullptr){
-                    node *p=new node(key,value, nullptr);
-                    array[index]=p;
-                    ++total;
-                }
-                else{
-                    node *p=array[index];
-                    while(p->nxt_!= nullptr&&(compare(p->key_,key)||compare(key,p->key_)))p=p->nxt_;
-                    if(!compare(p->key_,key)&&!compare(key,p->key_))p->value_=value;
-                    else{
-                        p->nxt_=new node(key,value, nullptr);
-                        ++total;
-                    }
-                }
-                if(total > Size){
-                    int i;
-                    for(i=0;i<Size;++i)if(array[i]!= nullptr)break;
-                    node *p=array[i];
-                    array[i]=p->nxt_;
-                    delete p;
-                    --total;
-                }
-            }
-            void remove(const K &key, const S &value){
-                int index = hash(key)%Size;
-                if(array[index]!= nullptr){
-                    node *p=array[index];
-                    node *q=array[index];
-                    while(p->nxt_!= nullptr&&(compare(p->key_,key)||compare(key,p->key_))){
-                        p=p->nxt_;
-
-                    }
-                    if(!compare(p->key_,key)&&!compare(key,p->key_)){
-
-                    }
-                }
-            }
-
-
-        };
+//        class Cache{
+//            //link_hash_map
+//        private:
+//            class node{
+//                K key_;
+//                S value_;
+//                node *nxt_= nullptr;
+//                node(const K &key,const S &value,node *p){
+//                    key_=key;
+//                    value_=value;
+//                    nxt_=p;
+//                }
+//            };
+//            const int Size = 103;
+//            int total = 0;
+//            Node **array[103];
+////            int num[103];
+//            std::hash<K> hash;
+//            Compare compare;
+//        public:
+//            Cache(){
+//                for(int i = 0; i < Size; ++i){
+//                    array[i]= nullptr;
+//                }
+//            }
+//            bool find(const K &key , S &value){
+//                int index = hash(key)%Size;
+//                if(array[index]!= nullptr){
+//                    node *p = array[index];
+//                    while(p->next!= nullptr&&(compare(p->key_,key)||compare(key,p->key_)))p=p->nxt_;
+//                    if(!compare(p->key_,key)&&!compare(key,p->key_)){
+//                        value = p->value_;
+//                        return true;
+//                    }
+//                    return false;
+//                }
+//                return false;
+//            }
+//            void set(const K &key, S &value){
+//                int index = hash(key)%Size;
+//                if(array[index]== nullptr){
+//                    node *p=new node(key,value, nullptr);
+//                    array[index]=p;
+//                    ++total;
+//                }
+//                else{
+//                    node *p=array[index];
+//                    while(p->nxt_!= nullptr&&(compare(p->key_,key)||compare(key,p->key_)))p=p->nxt_;
+//                    if(!compare(p->key_,key)&&!compare(key,p->key_))p->value_=value;
+//                    else{
+//                        p->nxt_=new node(key,value, nullptr);
+//                        ++total;
+//                    }
+//                }
+//                if(total > Size){
+//                    int i;
+//                    for(i=0;i<Size;++i)if(array[i]!= nullptr)break;
+//                    node *p=array[i];
+//                    array[i]=p->nxt_;
+//                    delete p;
+//                    --total;
+//                }
+//            }
+//            void remove(const K &key, const S &value){
+//                int index = hash(key)%Size;
+//                if(array[index]!= nullptr){
+//                    node *p=array[index];
+//                    node *q=array[index];
+//                    while(p->nxt_!= nullptr&&(compare(p->key_,key)||compare(key,p->key_))){
+//                        p=p->nxt_;
+//
+//                    }
+//                    if(!compare(p->key_,key)&&!compare(key,p->key_)){
+//
+//                    }
+//                }
+//            }
+//
+//
+//        };
         void Get(const K &left,const K &right ,vector<S> &v){
             v.clear();
 //            vector<ll> v_;
@@ -170,7 +188,7 @@ namespace lailai {
             return bpt.Getone(key, v);
             //return v.size();
         }
-        void Modify(const K &key, const S &value) { // need to be changed
+        void Modify(const K &key, const S &value, bool log = 0) { // need to be changed
 //            ll index = 9223372036854775807;
 //            bool flag = bpt.Getone(key,index);
 //            if(!flag)return;
@@ -179,7 +197,12 @@ namespace lailai {
 //            fileData.write(reinterpret_cast<char *>(&n), sizeof(Node));
 //            Remove(key, value);
 //            Insert(key, value);
-                bpt.Modify(key,value);
+            if (!log) {
+                S tmp;
+                bpt.Getone(key, tmp);
+                stk.push(RollbackNode(3, key, tmp));
+            }
+            bpt.Modify(key,value);
         }
 //        ll add(const Node &n){
 //            ++totalNode;
@@ -190,14 +213,20 @@ namespace lailai {
 //            fileData.write(reinterpret_cast<const char *>(&n), sizeof(Node));
 //            return index;
 //        }
-        void Insert(const K &key,const S &value){
+        void Insert(const K &key,const S &value, int log = 0){
 //            Node n(key,value);
 //            ll index = add(n);
+            if (!log) stk.push(RollbackNode(1, key, value));
             bpt.Insert(key,value);
         }
-        bool Remove(const K &key, const S &value){
+        bool Remove(const K &key, const S &value, int log = 0){
 //            vector<ll> v;
 //            Node n(key,value);
+            if (!log) {
+                S tmp;
+                bpt.Getone(key, tmp);
+                stk.push(RollbackNode(2, key, tmp));
+            }
             return bpt.Remove(key,value);
 //            if(v.empty())return false;
 //            for(auto i = v.begin(); i != v.end(); ++i){
@@ -212,6 +241,23 @@ namespace lailai {
 //                }
 //            }
 //            return false;
+        }
+        void rollback(int now) {
+            while (!stk.empty()) {
+                RollbackNode<K, S> tmp;
+                stk.gettop(tmp);
+                // std::cout << tmp.ti << "  # " << now << std::endl;
+                if (tmp.ti <= now)
+                    break;
+                if (tmp.type == 1) {
+                    Remove(tmp.k, tmp.v, 1);
+                } else if (tmp.type == 2) {
+                    Insert(tmp.k, tmp.v, 1);
+                } else {
+                    Modify(tmp.k, tmp.v, 1);
+                }
+                stk.pop();
+            }
         }
     };
     template<class K,class S,class Compare>
@@ -871,7 +917,7 @@ namespace lailai {
         bool leremove(Leave &l, const Node &key, ll now_index) {//true:fa内容被修改，false：fa内容未被修改
             int i;
             for(i = 0; i < l.num; ++i){
-                if(compare(key,l.array[i+1]))break;
+                if(com(key.key,l.array[i+1].key))break;
             }
             for (int j = i; j < l.num; ++j) {
                 l.array[j] = l.array[j + 1];

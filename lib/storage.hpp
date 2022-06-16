@@ -4,6 +4,9 @@
 #include <fstream>
 #include <iostream>
 
+#include "rollback.hpp"
+#include "utils.hpp"
+
 using std::fstream;
 using std::ifstream;
 using std::ofstream;
@@ -15,10 +18,22 @@ class Storage {
         fstream file_;
         string file_name_;
         int sizeofT_ = sizeof(T);
+        struct RollbackNode {
+            int ti;
+            int k;
+            T v;
+            RollbackNode() { }
+            RollbackNode(const int &k_, const T &v_) {
+                k = k_, v = v_;
+                ti = strtoint(TIMESTAMP.substr(1, TIMESTAMP.size() - 2));
+            }
+        };
+
+        FileStack<RollbackNode> stk;
 
     public:
-        Storage(string FN = "", int opt = 0) {
-            file_name_ = FN;
+        Storage(string FN = "", int opt = 0) : stk(FN) {
+            file_name_ = FN + ".dat";
             file_.open(file_name_);
             if (!file_) {
                 file_.open(file_name_, std::ios::out);
@@ -28,9 +43,7 @@ class Storage {
             file_.close();
         }
 
-        ~Storage() {
-            file_.close();
-        }
+        ~Storage() { file_.close(); }
 
         //读出第n个int的值赋给tmp，1_base
         void get_info(int &tmp, int n) {
@@ -61,8 +74,14 @@ class Storage {
         }
 
         //用t的值更新位置索引index对应的对象，保证调用的index都是由write函数产生
-        void update(T &t, const int index) {
+        void update(T &t, const int index, int log = 0) {
             file_.open(file_name_);
+            if (!log) {
+                file_.seekg(index);
+                T tmp;
+                file_.read(reinterpret_cast<char *>(&tmp), sizeofT_);
+                stk.push(RollbackNode(index, tmp));
+            }
             file_.seekp(index);
             file_.write(reinterpret_cast<char *>(&t), sizeofT_);
             file_.close();
@@ -74,6 +93,17 @@ class Storage {
             file_.seekg(index);
             file_.read(reinterpret_cast<char *>(&t), sizeofT_);
             file_.close();
+        }
+
+        void rollback(int now) {
+            while (!stk.empty()) {
+                RollbackNode tmp;
+                stk.gettop(tmp);
+                if (tmp.ti <= now)
+                    break;
+                update(tmp.v, tmp.k, 1);
+                stk.pop();
+            }
         }
 
         void Delete(int index) { ; }

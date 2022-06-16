@@ -15,6 +15,22 @@
 #include "../lib/BPlustree.hpp"
 #include "../lib/vector.hpp"
 
+
+/*
+ * add_user
+ * login
+ * logout
+ * modify_profile
+ * add_train
+ * delete_train
+
+ * release_train
+ * buy_ticket
+ * refund_ticket
+ * rollback
+ */
+
+
 using std::cout;
 using std::endl;
 
@@ -523,7 +539,20 @@ public:
         return "okk";
     }
 
-    std::string rollback() {
+    std::string rollback(const Cmd &info) {
+        int nowtime = strtoint(TIMESTAMP.substr(1, TIMESTAMP.size() - 2));
+        int totime = strtoint(info.get('t'));
+        if (totime > nowtime) return "rollback: can not go to future";
+        online.clear();
+        if (totime == nowtime) return "okk";
+        user_.rollback(totime);
+        train_.rollback(totime);
+        daytrain_.rollback(totime);
+        stationtrain_.rollback(totime);
+        pending_order_.rollback(totime);
+        user_order_.rollback(totime);
+        order_.rollback(totime);
+        cout << '0' << endl;
         return "okk";
     }
 
