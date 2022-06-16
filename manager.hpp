@@ -2,6 +2,7 @@
 #define TICKET_SYSTEM_MANAGER_HPP
 
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 #include <cstring>
 
@@ -27,8 +28,8 @@ private:
     // TODO:
     lailai::map<Varchar, User> user_;
     lailai::map<Varchar, Train> train_;
-    lailai::map<std::pair<Varchar, Date>, dayTrain> daytrain_;
-
+    // lailai::map<std::pair<Varchar, Date>, dayTrain> daytrain_;
+    lailai::map<size_t, dayTrain> daytrain_;
     lailai::map<std::pair<Varchar, Varchar>, stationTrain> stationtrain_;
     lailai::map<std::pair<std::pair<Varchar, Date>, int>, int> pending_order_;
     lailai::map<std::pair<Varchar, int>, int> user_order_;
@@ -184,7 +185,7 @@ public:
         train_.Modify(tmp.trainIDhash, tmp);
 
         for (Date i = tmp.startDate; i <= tmp.endDate; i.addDay())
-            daytrain_.Insert(std::make_pair(Varchar(info.get('i')), i), dayTrain(tmp.seatNum));
+            daytrain_.Insert(Varchar(info.get('i')).var ^ i.now, dayTrain(tmp.seatNum));
 
         for (int i = 0; i < tmp.stationNum; ++i) {
             stationTrain stmp;
@@ -216,7 +217,7 @@ public:
             return "query_train: not in train run range";
         dayTrain dtmp;
         if (tmp.released)
-            daytrain_.Getone(std::make_pair(Varchar(info.get('i')), start), dtmp);
+            daytrain_.Getone(Varchar(info.get('i')).var ^ start.now, dtmp);
         else dtmp = dayTrain(tmp.seatNum);
 
         cout << tmp.trainID << ' ' << tmp.type << endl;
@@ -271,7 +272,7 @@ public:
             tt.arriveTime = startDay + si.startTime + ttrain[j].arriveTime;
             tt.first = info.get('p') == "cost" ? tt.price : tt.arriveTime - tt.leaveTime;
             dayTrain dt;
-            bool tmp = daytrain_.Getone(std::make_pair(si.trainIDhash, startDay), dt);
+            bool tmp = daytrain_.Getone(si.trainIDhash ^ startDay.now, dt);
 
             tt.seat = dt.getmin(si.idx, ttrain[j].idx);
             atrain.push_back(tt);
@@ -371,10 +372,10 @@ public:
         
         dayTrain dt1, dt2;
 
-        daytrain_.Getone(std::make_pair(Varchar(ans.train1), ans.day1), dt1);
+        daytrain_.Getone(Varchar(ans.train1).var ^ ans.day1.now, dt1);
         int seat1 = dt1.getmin(ans.ids1, ans.idt1);
 
-        daytrain_.Getone(std::make_pair(Varchar(ans.train2), ans.day2), dt2);
+        daytrain_.Getone(Varchar(ans.train2).var ^ ans.day2.now, dt2);
         int seat2 = dt2.getmin(ans.ids2, ans.idt2);
 
         std::cout << ans.train1 << ' '
@@ -425,14 +426,14 @@ public:
             return "buy_ticket: not in train run range";
 
         dayTrain dt;
-        daytrain_.Getone(std::make_pair(Varchar(t.trainIDhash), startDay), dt);
+        daytrain_.Getone(t.trainIDhash ^ startDay.now, dt);
     
         Order porder;
         int prices = (t.prices[ti] - t.prices[si]) * buyNum;
 
         if (dt.getmin(si, ti) >= buyNum) {
             dt.minus(si, ti, buyNum);
-            daytrain_.Modify(std::make_pair(Varchar(t.trainIDhash), startDay), dt);
+            daytrain_.Modify(Varchar(t.trainIDhash).var ^ startDay.now, dt);
             porder.set(startDay, info.get('i').c_str(), si, ti, info.get('f').c_str(), info.get('t').c_str(), 0, leavingTime, arrivingTime, prices, buyNum);
             int idx = order_.write(porder);
             pending_order_.Insert(std::make_pair(std::make_pair(Varchar(t.trainIDhash), startDay), idx), idx);
@@ -495,7 +496,7 @@ public:
 
         if (o.status == 0) {
             dayTrain dt;
-            daytrain_.Getone(std::make_pair(Varchar(o.trainID), o.day), dt);
+            daytrain_.Getone(Varchar(o.trainID).var ^ o.day.now, dt);
             dt.minus(o.ids, o.idt, -o.num);
             std::vector<int> range2;
             pending_order_.Get(std::make_pair(std::make_pair(Varchar(o.trainID), o.day), 0),
@@ -515,7 +516,7 @@ public:
                     pending_order_.Remove(std::make_pair(std::make_pair(Varchar(o.trainID), o.day), *it2), *it2);
                 } else ++it2;
             }
-            daytrain_.Modify(std::make_pair(Varchar(o.trainID), o.day), dt);
+            daytrain_.Modify(Varchar(o.trainID).var ^ o.day.now, dt);
         }
 
         o.status = 2;
