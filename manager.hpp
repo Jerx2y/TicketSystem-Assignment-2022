@@ -13,10 +13,10 @@
 #include "utils.hpp"
 #include "storage.hpp"
 #include "BPlustree.hpp"
+#include "vector.hpp"
 
 // TODO
 #include <string>
-#include <vector>
 #include <algorithm> // sort
 
 using std::cout;
@@ -239,8 +239,8 @@ public:
 
     std::string query_ticket(const Cmd &info) {
 
-        std::vector<stationTrain> strain, ttrain;
-        std::vector<ticketTrain> atrain;
+        sjtu::vector<stationTrain> strain, ttrain;
+        sjtu::vector<ticketTrain> atrain;
 
         stationtrain_.Get(std::make_pair(Varchar(info.get('s')), 0), std::make_pair(Varchar(info.get('s')), SIZE_MAX), strain);
         stationtrain_.Get(std::make_pair(Varchar(info.get('t')), 0), std::make_pair(Varchar(info.get('t')), SIZE_MAX), ttrain);
@@ -291,7 +291,7 @@ public:
     }
 
     std::string query_transfer(const Cmd &info) {
-        std::vector<stationTrain> strain, ttrain;
+        sjtu::vector<stationTrain> strain, ttrain;
         
         stationtrain_.Get(std::make_pair(Varchar(info.get('s')), 0), std::make_pair(Varchar(info.get('s')), SIZE_MAX), strain);
         stationtrain_.Get(std::make_pair(Varchar(info.get('t')), 0), std::make_pair(Varchar(info.get('t')), SIZE_MAX), ttrain);
@@ -453,7 +453,7 @@ public:
     std::string query_order(const Cmd &info) {
         if (!online.count(info.get('u')))
             return "query_order: user not online";
-        std::vector<int> range;
+        sjtu::vector<int> range;
         user_order_.Get(std::make_pair(Varchar(info.get('u')), 0),
                         std::make_pair(Varchar(info.get('u')), INF),
                         range);
@@ -477,7 +477,7 @@ public:
         if (!online.count(info.get('u')))
             return "refund_ticket: user not online";
 
-        std::vector<int> range;
+        sjtu::vector<int> range;
         user_order_.Get(std::make_pair(Varchar(info.get('u')), 0),
                         std::make_pair(Varchar(info.get('u')), INF),
                         range);
@@ -498,7 +498,7 @@ public:
             dayTrain dt;
             daytrain_.Getone(Varchar(o.trainID).var ^ o.day.now, dt);
             dt.minus(o.ids, o.idt, -o.num);
-            std::vector<int> range2;
+            sjtu::vector<int> range2;
             pending_order_.Get(std::make_pair(std::make_pair(Varchar(o.trainID), o.day), 0),
                                std::make_pair(std::make_pair(Varchar(o.trainID), o.day), INF),
                                range2);

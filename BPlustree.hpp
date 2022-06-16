@@ -1,11 +1,10 @@
 #ifndef TRAINTICKET2022_BPLUSTREE_HPP
 #define TRAINTICKET2022_BPLUSTREE_HPP
 #include<fstream>
-#include<vector>
+#include "vector.hpp"
 //裂块 =5的时候，分裂成两个各有两个块的情况
 //并块 =2的时候，与左儿子或者右儿子并块
 using ll = size_t;
-using std::vector;
 using std::ios;
 using std::fstream;
 namespace lailai {
@@ -129,7 +128,7 @@ namespace lailai {
 
 
         };
-        void Get(const K &left,const K &right ,std::vector<S> &v){
+        void Get(const K &left,const K &right ,sjtu::vector<S> &v){
             v.clear();
 //            vector<ll> v_;
             bpt.Get(left,right,v);
@@ -374,13 +373,13 @@ namespace lailai {
         bool find_one(Node &n){
             return find_one_block(n,root);
         }
-        void find_list_l(const Leave &le, const K &left,const K &right, std::vector<S> &v) {
+        void find_list_l(const Leave &le, const K &left,const K &right, sjtu::vector<S> &v) {
             for (int i = 1; i <= le.num; ++i) {
                 if (!com(le.array[i].key, left) && !com(right, le.array[i].key))v.push_back(le.array[i].value);//不比left小不比right大
             }
         }
 
-        void find_list_b(const Block &b, const K &left,const K &right, std::vector<S> &v) {
+        void find_list_b(const Block &b, const K &left,const K &right, sjtu::vector<S> &v) {
             if(!b.num)return;
             if (!b.isbottom) {
 //                cout << "&&" << endl;
