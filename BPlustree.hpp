@@ -52,31 +52,94 @@ namespace lailai {
         class Cache{
             //link_hash_map
         private:
+            class node{
+                K key_;
+                S value_;
+                node *nxt_= nullptr;
+                node(const K &key,const S &value,node *p){
+                    key_=key;
+                    value_=value;
+                    nxt_=p;
+                }
+            };
             const int Size = 103;
-            int total_key = 0;
+            int total = 0;
             Node **array[103];
-            int num[103];
+//            int num[103];
+            std::hash<K> hash;
+            Compare compare;
         public:
             Cache(){
                 for(int i = 0; i < Size; ++i){
-                    num[i]=0;
                     array[i]= nullptr;
+                }
+            }
+            bool find(const K &key , S &value){
+                int index = hash(key)%Size;
+                if(array[index]!= nullptr){
+                    node *p = array[index];
+                    while(p->next!= nullptr&&(compare(p->key_,key)||compare(key,p->key_)))p=p->nxt_;
+                    if(!compare(p->key_,key)&&!compare(key,p->key_)){
+                        value = p->value_;
+                        return true;
+                    }
+                    return false;
+                }
+                return false;
+            }
+            void set(const K &key, S &value){
+                int index = hash(key)%Size;
+                if(array[index]== nullptr){
+                    node *p=new node(key,value, nullptr);
+                    array[index]=p;
+                    ++total;
+                }
+                else{
+                    node *p=array[index];
+                    while(p->nxt_!= nullptr&&(compare(p->key_,key)||compare(key,p->key_)))p=p->nxt_;
+                    if(!compare(p->key_,key)&&!compare(key,p->key_))p->value_=value;
+                    else{
+                        p->nxt_=new node(key,value, nullptr);
+                        ++total;
+                    }
+                }
+                if(total > Size){
+                    int i;
+                    for(i=0;i<Size;++i)if(array[i]!= nullptr)break;
+                    node *p=array[i];
+                    array[i]=p->nxt_;
+                    delete p;
+                    --total;
+                }
+            }
+            void remove(const K &key, const S &value){
+                int index = hash(key)%Size;
+                if(array[index]!= nullptr){
+                    node *p=array[index];
+                    node *q=array[index];
+                    while(p->nxt_!= nullptr&&(compare(p->key_,key)||compare(key,p->key_))){
+                        p=p->nxt_;
+
+                    }
+                    if(!compare(p->key_,key)&&!compare(key,p->key_)){
+
+                    }
                 }
             }
 
 
         };
-        void Get(const K &key,std::vector<S> &v){
+        void Get(const K &left,const K &right ,std::vector<S> &v){
             v.clear();
-            vector<ll> v_;
-            bpt.Get(key,v_);
-            for(auto i = v_.begin(); i!= v_.end();++i){
-                ll index = *i;
-                Node n;
-                fileData.seekg(index);
-                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
-                v.push_back(n.value_);
-            }
+//            vector<ll> v_;
+            bpt.Get(left,right,v);
+//            for(auto i = v.begin(); i!= v.end();++i){
+//                ll index = *i;
+//                Node n;
+//                fileData.seekg(index);
+//                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
+//                v.push_back(n.value_);
+//            }
         }
         bool Getone(const K &key, S &value){
 //            vector<Node> v;
@@ -93,30 +156,30 @@ namespace lailai {
 //            if(v.empty())return false;
 //            value = v[0].value_;
 //            return true;
-ll index;
-            bool flag = bpt.Getone(key,index);
+//ll index;
+            bool flag = bpt.Getone(key,value);
             if(!flag)return false;
-            Node n;
-            fileData.seekg(index);
-            fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
-            value=n.value_;
+//            Node n;
+//            fileData.seekg(index);
+//            fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
+//            value=n.value_;
             return true;
         }
         int count(const K &key) {
-            vector<ll> v;
-            bpt.Get(key, v);
-            return v.size();
+            S v;
+            return bpt.Getone(key, v);
+            //return v.size();
         }
         void Modify(const K &key, const S &value) { // need to be changed
-            ll index = 9223372036854775807;
-            bool flag = bpt.Getone(key,index);
-            if(!flag)return;
-            Node n(key,value);
-            fileData.seekg(index);
-            fileData.write(reinterpret_cast<char *>(&n), sizeof(Node));
+//            ll index = 9223372036854775807;
+//            bool flag = bpt.Getone(key,index);
+//            if(!flag)return;
+//            Node n(key,value);
+//            fileData.seekg(index);
+//            fileData.write(reinterpret_cast<char *>(&n), sizeof(Node));
 //            Remove(key, value);
 //            Insert(key, value);
-
+                bpt.Modify(key,value);
         }
         ll add(const Node &n){
             ++totalNode;
@@ -128,26 +191,27 @@ ll index;
             return index;
         }
         void Insert(const K &key,const S &value){
-            Node n(key,value);
-            ll index = add(n);
-            bpt.Insert(key,index);
+//            Node n(key,value);
+//            ll index = add(n);
+            bpt.Insert(key,value);
         }
         bool Remove(const K &key, const S &value){
-            vector<ll> v;
-            bpt.Get(key,v);
-            if(v.empty())return false;
-            for(auto i = v.begin(); i != v.end(); ++i){
-                ll index = *i;
-                Node n;
-                fileData.seekg(index);
-                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
-                if(!com(n.value_,value)&&!com(value,n.value_)){
-                    typename BPT<K,S>::Node n_(key,index);
-                    bpt.remove(n_);
-                    return true;
-                }
-            }
-            return false;
+//            vector<ll> v;
+//            Node n(key,value);
+            return bpt.Remove(key,value);
+//            if(v.empty())return false;
+//            for(auto i = v.begin(); i != v.end(); ++i){
+//                ll index = *i;
+//                Node n;
+//                fileData.seekg(index);
+//                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
+//                if(!com(n.value_,value)&&!com(value,n.value_)){
+//                    typename BPT<K,S>::Node n_(key,index);
+//                    bpt.remove(n_);
+//                    return true;
+//                }
+//            }
+//            return false;
         }
     };
     template<class K,class S,class Compare>
@@ -163,7 +227,7 @@ ll index;
     public:
         class Node {//叶子节点内-块链-点
         public://维护第二关键字
-            ll value;
+            S value;
             K key;
         public:
             void operator=(const Node &x) {
@@ -173,7 +237,7 @@ ll index;
 
             Node() {};
 
-            Node(const K &key_, const ll &value_) : value(value_), key(key_) {
+            Node(const K &key_, const S &value_) : value(value_), key(key_) {
             };
         };
     private:
@@ -202,9 +266,7 @@ ll index;
             //read head and tail from array
             Node array[LEAVE_SIZE + 5];
         public:
-            void MergeBlock(const int &offset1, const int &offset2);
-
-
+//            void MergeBlock(const int &offset1, const int &offset2);
             Leave() {};
         };
 
@@ -312,13 +374,13 @@ ll index;
         bool find_one(Node &n){
             return find_one_block(n,root);
         }
-        void find_list_l(const Leave &le, const K &left,const K &right, std::vector<ll> &v) {
+        void find_list_l(const Leave &le, const K &left,const K &right, std::vector<S> &v) {
             for (int i = 1; i <= le.num; ++i) {
                 if (!com(le.array[i].key, left) && !com(right, le.array[i].key))v.push_back(le.array[i].value);//不比left小不比right大
             }
         }
 
-        void find_list_b(const Block &b, const K &left,const K &right, std::vector<ll> &v) {
+        void find_list_b(const Block &b, const K &left,const K &right, std::vector<S> &v) {
             if(!b.num)return;
             if (!b.isbottom) {
 //                cout << "&&" << endl;
@@ -354,7 +416,7 @@ ll index;
 
         }
 
-        void insert(const K &key, const ll &value) {
+        void insert(const K &key, const S &value) {
             Node n(key, value);
             KVblock pair_;
             if (biinsert(root, n, index_root, pair_)) {//根节点的特判
@@ -516,9 +578,9 @@ ll index;
             //----插入新的kv对
             int i;
             for (i = 0; i < le.num; ++i) {
-                if (compare(key, le.array[i + 1]))break;
+                if (com(key.key, le.array[i + 1].key))break;
             }
-            if (i && !compare(key, le.array[i]) && !compare(le.array[i], key))return false;
+            if (i && !com(key.key, le.array[i].key) && !com(le.array[i].key, key.key))return false;
             else {
                 ++le.num;
                 for (int j = le.num; j > i + 1; --j) {
@@ -869,6 +931,45 @@ ll index;
             }
 
         }
+
+        bool modify(const Block &root,const K &key,const S &value){
+//            std::cout << "BLOCKbegin " << b.num<<' '<<b.isbottom << std::endl;
+            Block b=root;
+            if(!b.num)return false;
+            while(!b.isbottom){
+                int index;
+                for (index = 0; index < b.num; ++index)if (com(key, b.key[index + 1]))break;//下一个大于自己就取当前所在位置，退出循环
+//                std::cout << "INDEX " << index << std::endl;
+                ll index_son = b.son[index];
+                fileIndex.seekg(index_son);
+                fileIndex.read(reinterpret_cast<char *>(&b), sizeof(Block));
+            }
+            int index;
+//            std::cout << "BLOCK " << b.num<<' '<<b.isbottom << std::endl;
+            for (index = 0; index < b.num; ++index)if(com(key, b.key[index + 1])){
+//                std::cout << "BLOCK " << b.key[index + 1] << std::endl;
+                    break;//下一个大于自己就取当前所在位置，退出循环
+            }
+//            std::cout << "INDEX " << index << std::endl;
+            ll index_son = b.son[index];
+            Leave le;
+            fileIndex.seekg(index_son);
+            fileIndex.read(reinterpret_cast<char *>(&le), sizeof(Leave));
+//            std::cout << "KEY " << key<<' ' << le.num << std::endl;
+            for (index = 0; index < le.num; ++index){
+//                std::cout << "COMPARE " << key << le.array[index+1].key << ' ' << com(key, le.array[index + 1].key) << std::endl;
+                if (com(key, le.array[index + 1].key)){
+                    break;//下一个大于自己就取当前所在位置，退出循环
+                }
+            }
+            if(!index)return false;
+//            std::cout << "KEY_LEAVE " << key<<' ' << le.array[index].key<<' '<<index << std::endl;
+            if(!com(le.array[index].key,key)&&!com(key,le.array[index].key))le.array[index].value=value;
+            else return false;
+            fileIndex.seekg(index_son);
+            fileIndex.write(reinterpret_cast<char *>(&le), sizeof(Leave));
+            return true;
+        }
     public:
 
         BPT(const std::string &file) : file_name(file) {
@@ -1002,8 +1103,8 @@ ll index;
 //            if(v.empty())return false;
 //            value= v[0];
 //            return true;
-            ll index = 223372036854775807;
-            Node n(key,index);
+//            ll index = 223372036854775807;
+            Node n(key,value);
             bool flag = find_one_block(n,root);
             if(!flag)return false;
             value = n.value;
@@ -1024,6 +1125,10 @@ ll index;
         void reset() {
 //          fileIndex.close();
 //          fileIndex.open(file_name,ios::in|ios::out|ios::binary);
+        }
+
+        bool Modify(const K &key,const S &value){
+        return modify(root,key,value);
         }
     };
 }
