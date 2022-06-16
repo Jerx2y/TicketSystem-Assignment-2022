@@ -39,14 +39,14 @@ private:
 
 public:
 
-    Manager() : user_("user"),
-                train_("train"),
-                daytrain_("daytrain"),
-                order_("order"),
-                stationtrain_("stationtrain"),
-                pending_order_("pendingorder"),
-                user_order_("userorder"),
-                constant("constant") {
+    Manager() : user_("user"),//, 0),
+                train_("train"),//, 1),
+                daytrain_("daytrain"),//, 1),
+                order_("order"),//, 0),
+                stationtrain_("stationtrain"),//, 0),
+                pending_order_("pendingorder"),//, 0),
+                user_order_("userorder"),//, 0),
+                constant("constant") {//, 0) {
         if (!constant.count(1)) {
             constant.Insert(1, ordercnt = 0);
             constant.Insert(2, usercnt = 0);

@@ -15,8 +15,8 @@ namespace lailai {
     private:
         Compare compare;
         Com com;
-        fstream fileData;
-        const std::string file_name;
+//        fstream fileData;
+//        const std::string file_name;
         BPT<K,S> bpt;
         struct Node{
             K key_;
@@ -27,27 +27,27 @@ namespace lailai {
                 value_=value;
             }
         };
-        int totalNode;
+//        int totalNode;
     public:
-        map(const std::string &file):bpt(file+".idx"),file_name(file+".dat"){
-            fileData.open(file_name, ios::out | ios::in | ios::binary);
-            if(!fileData.good()){
-                fileData.open(file_name, ios::out);
-                fileData.close();
-                fileData.open(file_name, ios::out | ios::in | ios::binary);
-                totalNode=0;
-                fileData.seekg(0);
-                fileData.write(reinterpret_cast<char *>(&totalNode), sizeof(int));
+        map(const std::string &file):bpt(file+".idx"){
+//            fileData.open(file_name, ios::out | ios::in | ios::binary);
+//            if(!fileData.good()){
+//                fileData.open(file_name, ios::out);
+//                fileData.close();
+//                fileData.open(file_name, ios::out | ios::in | ios::binary);
+//                totalNode=0;
+//                fileData.seekg(0);
+//                fileData.write(reinterpret_cast<char *>(&totalNode), sizeof(int));
+//            }
+//            else{
+//                fileData.seekg(0);
+//                fileData.read(reinterpret_cast<char *>(&totalNode), sizeof(int));
             }
-            else{
-                fileData.seekg(0);
-                fileData.read(reinterpret_cast<char *>(&totalNode), sizeof(int));
-            }
-        }
+        
         ~map(){
-            fileData.seekg(0);
-            fileData.write(reinterpret_cast<char *>(&totalNode), sizeof(int));
-            fileData.close();
+//            fileData.seekg(0);
+//            fileData.write(reinterpret_cast<char *>(&totalNode), sizeof(int));
+//            fileData.close();
         }
         class Cache{
             //link_hash_map
@@ -181,15 +181,15 @@ namespace lailai {
 //            Insert(key, value);
                 bpt.Modify(key,value);
         }
-        ll add(const Node &n){
-            ++totalNode;
-            fileData.seekg(0);
-            fileData.write(reinterpret_cast<char *>(&totalNode), sizeof(int));
-            ll index = sizeof(Node)*(totalNode-1)+sizeof(int);
-            fileData.seekg(index);
-            fileData.write(reinterpret_cast<const char *>(&n), sizeof(Node));
-            return index;
-        }
+//        ll add(const Node &n){
+//            ++totalNode;
+//            fileData.seekg(0);
+//            fileData.write(reinterpret_cast<char *>(&totalNode), sizeof(int));
+//            ll index = sizeof(Node)*(totalNode-1)+sizeof(int);
+//            fileData.seekg(index);
+//            fileData.write(reinterpret_cast<const char *>(&n), sizeof(Node));
+//            return index;
+//        }
         void Insert(const K &key,const S &value){
 //            Node n(key,value);
 //            ll index = add(n);
