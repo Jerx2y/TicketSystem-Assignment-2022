@@ -48,9 +48,6 @@ int main() {
         if (opt == "exit")
             return std::cout << "bye" << std::endl, 0;
         
-        if (opt == "offline")
-            sys.offline(), result = "okk";
-        
         if (result != "okk") {
             std::cout << -1 << std::endl;
         }

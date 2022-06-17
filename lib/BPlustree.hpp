@@ -14,7 +14,7 @@ using std::fstream;
 namespace lailai {
     template<class K,class S, class Compare = std::less<K>> class BPT;
     template<class K, class S, class Compare = std::less<K>,class Com=std::less<S>>
-    class map{//可以直接在map层面做缓存，用linkedehashmap实现；查找key对应的value的时候可以直接从内存里读取；
+    class map{
     private:
         template <class Key, class Value>
         struct RollbackNode {
@@ -33,8 +33,6 @@ namespace lailai {
 
         Compare compare;
         Com com;
-//        fstream fileData;
-//        const std::string file_name;
         BPT<K,S> bpt;
         struct Node{
             K key_;
@@ -45,158 +43,26 @@ namespace lailai {
                 value_=value;
             }
         };
-//        int totalNode;
     public:
         map(const std::string &file):bpt(file+".idx"), stk(file){
-//            fileData.open(file_name, ios::out | ios::in | ios::binary);
-//            if(!fileData.good()){
-//                fileData.open(file_name, ios::out);
-//                fileData.close();
-//                fileData.open(file_name, ios::out | ios::in | ios::binary);
-//                totalNode=0;
-//                fileData.seekg(0);
-//                fileData.write(reinterpret_cast<char *>(&totalNode), sizeof(int));
-//            }
-//            else{
-//                fileData.seekg(0);
-//                fileData.read(reinterpret_cast<char *>(&totalNode), sizeof(int));
             }
 
         ~map(){
-//            fileData.seekg(0);
-//            fileData.write(reinterpret_cast<char *>(&totalNode), sizeof(int));
-//            fileData.close();
         }
-//        class Cache{
-//            //link_hash_map
-//        private:
-//            class node{
-//                K key_;
-//                S value_;
-//                node *nxt_= nullptr;
-//                node(const K &key,const S &value,node *p){
-//                    key_=key;
-//                    value_=value;
-//                    nxt_=p;
-//                }
-//            };
-//            const int Size = 103;
-//            int total = 0;
-//            Node **array[103];
-////            int num[103];
-//            std::hash<K> hash;
-//            Compare compare;
-//        public:
-//            Cache(){
-//                for(int i = 0; i < Size; ++i){
-//                    array[i]= nullptr;
-//                }
-//            }
-//            bool find(const K &key , S &value){
-//                int index = hash(key)%Size;
-//                if(array[index]!= nullptr){
-//                    node *p = array[index];
-//                    while(p->next!= nullptr&&(compare(p->key_,key)||compare(key,p->key_)))p=p->nxt_;
-//                    if(!compare(p->key_,key)&&!compare(key,p->key_)){
-//                        value = p->value_;
-//                        return true;
-//                    }
-//                    return false;
-//                }
-//                return false;
-//            }
-//            void set(const K &key, S &value){
-//                int index = hash(key)%Size;
-//                if(array[index]== nullptr){
-//                    node *p=new node(key,value, nullptr);
-//                    array[index]=p;
-//                    ++total;
-//                }
-//                else{
-//                    node *p=array[index];
-//                    while(p->nxt_!= nullptr&&(compare(p->key_,key)||compare(key,p->key_)))p=p->nxt_;
-//                    if(!compare(p->key_,key)&&!compare(key,p->key_))p->value_=value;
-//                    else{
-//                        p->nxt_=new node(key,value, nullptr);
-//                        ++total;
-//                    }
-//                }
-//                if(total > Size){
-//                    int i;
-//                    for(i=0;i<Size;++i)if(array[i]!= nullptr)break;
-//                    node *p=array[i];
-//                    array[i]=p->nxt_;
-//                    delete p;
-//                    --total;
-//                }
-//            }
-//            void remove(const K &key, const S &value){
-//                int index = hash(key)%Size;
-//                if(array[index]!= nullptr){
-//                    node *p=array[index];
-//                    node *q=array[index];
-//                    while(p->nxt_!= nullptr&&(compare(p->key_,key)||compare(key,p->key_))){
-//                        p=p->nxt_;
-//
-//                    }
-//                    if(!compare(p->key_,key)&&!compare(key,p->key_)){
-//
-//                    }
-//                }
-//            }
-//
-//
-//        };
         void Get(const K &left,const K &right ,vector<S> &v){
             v.clear();
-//            vector<ll> v_;
             bpt.Get(left,right,v);
-//            for(auto i = v.begin(); i!= v.end();++i){
-//                ll index = *i;
-//                Node n;
-//                fileData.seekg(index);
-//                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
-//                v.push_back(n.value_);
-//            }
         }
         bool Getone(const K &key, S &value){
-//            vector<Node> v;
-//            v.clear();
-//            vector<ll> v_;
-//            bpt.Get(key,v_);
-//            for(auto i = v_.begin(); i!= v_.end();++i){
-//                ll index = *i;
-//                Node n;
-//                fileData.seekg(index);
-//                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
-//                v.push_back(n);
-//            }
-//            if(v.empty())return false;
-//            value = v[0].value_;
-//            return true;
-//ll index;
             bool flag = bpt.Getone(key,value);
             if(!flag)return false;
-//            Node n;
-//            fileData.seekg(index);
-//            fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
-//            value=n.value_;
             return true;
         }
         int count(const K &key) {
             S v;
             return bpt.Getone(key, v);
-            //return v.size();
         }
         void Modify(const K &key, const S &value, bool log = 0) { // need to be changed
-//            ll index = 9223372036854775807;
-//            bool flag = bpt.Getone(key,index);
-//            if(!flag)return;
-//            Node n(key,value);
-//            fileData.seekg(index);
-//            fileData.write(reinterpret_cast<char *>(&n), sizeof(Node));
-//            Remove(key, value);
-//            Insert(key, value);
             if (!log) {
                 S tmp;
                 bpt.Getone(key, tmp);
@@ -204,49 +70,22 @@ namespace lailai {
             }
             bpt.Modify(key,value);
         }
-//        ll add(const Node &n){
-//            ++totalNode;
-//            fileData.seekg(0);
-//            fileData.write(reinterpret_cast<char *>(&totalNode), sizeof(int));
-//            ll index = sizeof(Node)*(totalNode-1)+sizeof(int);
-//            fileData.seekg(index);
-//            fileData.write(reinterpret_cast<const char *>(&n), sizeof(Node));
-//            return index;
-//        }
         void Insert(const K &key,const S &value, int log = 0){
-//            Node n(key,value);
-//            ll index = add(n);
             if (!log) stk.push(RollbackNode(1, key, value));
             bpt.Insert(key,value);
         }
         bool Remove(const K &key, const S &value, int log = 0){
-//            vector<ll> v;
-//            Node n(key,value);
             if (!log) {
                 S tmp;
                 bpt.Getone(key, tmp);
                 stk.push(RollbackNode(2, key, tmp));
             }
             return bpt.Remove(key,value);
-//            if(v.empty())return false;
-//            for(auto i = v.begin(); i != v.end(); ++i){
-//                ll index = *i;
-//                Node n;
-//                fileData.seekg(index);
-//                fileData.read(reinterpret_cast<char *>(&n), sizeof(Node));
-//                if(!com(n.value_,value)&&!com(value,n.value_)){
-//                    typename BPT<K,S>::Node n_(key,index);
-//                    bpt.remove(n_);
-//                    return true;
-//                }
-//            }
-//            return false;
         }
         void rollback(int now) {
             while (!stk.empty()) {
                 RollbackNode<K, S> tmp;
                 stk.gettop(tmp);
-                // std::cout << tmp.ti << "  # " << now << std::endl;
                 if (tmp.ti <= now)
                     break;
                 if (tmp.type == 1) {
@@ -305,14 +144,11 @@ namespace lailai {
             friend class BPT;
 
         private:
-//            int nxt = -1;
-//            int pre = -1;
             int num = 0;
             std::pair<Block *, ll> fa;
             //read head and tail from array
             Node array[LEAVE_SIZE + 5];
         public:
-//            void MergeBlock(const int &offset1, const int &offset2);
             Leave() {};
         };
 
@@ -333,12 +169,6 @@ namespace lailai {
         Block root;
 
         Compare com;
-
-//        int totalblock;
-//
-//        int totalleave;
-//
-//        ll index_root;
 
         class basicManager{
         public:
@@ -377,8 +207,6 @@ namespace lailai {
             if(!basicManager.top_leave){
                 ll index = basicManager.totalblock * sizeof(Block) + basicManager.totalleave * sizeof(Leave) + sizeof(basicManager);
                 ++basicManager.totalleave;
-//                fileIndex.seekg(sizeof(int));
-//                fileIndex.write(reinterpret_cast<char *>(&totalleave), sizeof(int));
                 return index;
             }
             return basicManager.stack_leave[basicManager.top_leave--];
@@ -388,8 +216,6 @@ namespace lailai {
             if(!basicManager.top_block){
                 ll index = basicManager.totalblock * sizeof(Block) + basicManager.totalleave * sizeof(Leave) + sizeof(basicManager);
                 ++basicManager.totalblock;
-//            fileIndex.seekg(0);
-//            fileIndex.write(reinterpret_cast<char *>(&totalblock), sizeof(int));
                 return index;
             }
             return basicManager.stack_block[basicManager.top_block--];
@@ -397,14 +223,11 @@ namespace lailai {
 
         void modify_father(const Leave &l, const K &key) {
             Block *p = l.fa.first;
-//            if(p==nullptr)cout << "debug " << key.key << endl;
             if (l.fa.second) {
                 l.fa.first->key[l.fa.second] = key;
                 return;
             }
             while (p != &root && !p->fa.second) {
-//                cout << p->isbottom << '&' << p->key[1].key << endl;
-//                cout << root.key[1].key<<'%' << endl;
                 p = p->fa.first;
             }
             if (p == &root)return;
@@ -457,7 +280,6 @@ namespace lailai {
         void find_list_b(const Block &b, const K &left,const K &right, vector<S> &v) {
             if(!b.num)return;
             if (!b.isbottom) {
-//                cout << "&&" << endl;
                 int i;
                 for (i = 0; i < b.num; ++i) {
                     if (com(left, b.key[i + 1]) || !com(left, b.key[i + 1]) && !com(b.key[i + 1], left))
@@ -589,7 +411,6 @@ namespace lailai {
             } else {//是叶子节点的父节点
                 Leave le;
                 KVleave pair;
-                reset();
                 fileIndex.seekg(son_index);
                 fileIndex.read(reinterpret_cast<char *>(&le), sizeof(Leave));
                 le.fa.first = &b;
@@ -610,7 +431,6 @@ namespace lailai {
                         SpilitBlock(now_index, pair_);
                         return true;
                     } else {
-                        reset();
                         fileIndex.seekg(now_index);
                         fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
                         return false;
@@ -672,7 +492,6 @@ namespace lailai {
                 splitLeave(now_index, pair);
                 return true;//裂块
             } else {
-                reset();
                 fileIndex.seekg(now_index);
                 fileIndex.write(reinterpret_cast<char *>(&le), sizeof(Leave));//重新写回文件
                 return false;
@@ -740,10 +559,6 @@ namespace lailai {
         }
 
         bool biremove(Block &b, const Node &key, ll now_index) {//true说明key值减少
-            //debug
-//            cout << "remove-BLOCK" << endl;
-//            for(int j = 1; j <= b.num; ++j)cout << b.key[j].key <<' ';
-//            cout << "\n----------"<<endl;
             int i;
             for (i = 0; i < b.num; ++i) {
                 if(com(key.key,b.key[i+1]))break;
@@ -820,14 +635,12 @@ namespace lailai {
                     fileIndex.seekg(now_index);
                     fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
                     if (b.num < BLOCK_MIN) {
-//                        cout << "YES" << endl;
                         if (!b.fa.second) {//合并右邻居
                             ll bro_index = b.fa.first->son[1];
                             Block bro;
                             fileIndex.seekg(bro_index);
                             fileIndex.read(reinterpret_cast<char *>(&bro), sizeof(Block));
                             if (bro.num > BLOCK_MIN) {
-//                                cout << "GET_ONE_CHILD_LBLOCK" << endl;
                                 get_one_child_r_b(b, bro);
                                 fileIndex.seekg(now_index);
                                 fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
@@ -835,7 +648,6 @@ namespace lailai {
                                 fileIndex.write(reinterpret_cast<char *>(&bro), sizeof(Block));
                                 return true;
                             } else {
-//                                cout << "MERGE_RIGHT_BLOCK" << endl;
                                 merge_r_b(b, bro);
                                 fileIndex.seekg(now_index);
                                 fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
@@ -848,7 +660,6 @@ namespace lailai {
                             fileIndex.seekg(bro_index);
                             fileIndex.read(reinterpret_cast<char *>(&bro_l), sizeof(Block));
                             if (bro_l.num > BLOCK_MIN) {
-//                                cout << "GET_LEFT_BLOCK" << endl;
                                 get_one_child_l_b(b, bro_l);
                                 fileIndex.seekg(now_index);
                                 fileIndex.write(reinterpret_cast<char *>(&b), sizeof(Block));
@@ -856,10 +667,6 @@ namespace lailai {
                                 fileIndex.write(reinterpret_cast<char *>(&bro_l), sizeof(Block));
                                 return false;
                             } else {
-//                                cout << "-----BLOCK----" << endl;
-//                                for(int j =1; j<= bro_l.num;++j)cout << bro_l.key[j].key << ' ';
-//                                cout << "\n--------" << endl;
-//                                cout << "MERGE_LEFT_BLOCK" << endl;
                                 merge_l_b(b, bro_l);
                                 fileIndex.seekg(bro_index);
                                 fileIndex.write(reinterpret_cast<char *>(&bro_l), sizeof(Block));
@@ -958,7 +765,7 @@ namespace lailai {
                         fileIndex.write(reinterpret_cast<char *>(&bro_l), sizeof(Leave));
                         fileIndex.seekg(now_index);
                         fileIndex.write(reinterpret_cast<char *>(&l), sizeof(Leave));
-                        return false;//
+                        return false;
                     } else if(bro_l.num) {
                         merge_l(l, bro_l);
                         fileIndex.seekg(bro_index);
@@ -1006,37 +813,29 @@ namespace lailai {
         }
 
         bool modify(const Block &root,const K &key,const S &value){
-//            std::cout << "BLOCKbegin " << b.num<<' '<<b.isbottom << std::endl;
             Block b=root;
             if(!b.num)return false;
             while(!b.isbottom){
                 int index;
                 for (index = 0; index < b.num; ++index)if (com(key, b.key[index + 1]))break;//下一个大于自己就取当前所在位置，退出循环
-//                std::cout << "INDEX " << index << std::endl;
                 ll index_son = b.son[index];
                 fileIndex.seekg(index_son);
                 fileIndex.read(reinterpret_cast<char *>(&b), sizeof(Block));
             }
             int index;
-//            std::cout << "BLOCK " << b.num<<' '<<b.isbottom << std::endl;
             for (index = 0; index < b.num; ++index)if(com(key, b.key[index + 1])){
-//                std::cout << "BLOCK " << b.key[index + 1] << std::endl;
                     break;//下一个大于自己就取当前所在位置，退出循环
             }
-//            std::cout << "INDEX " << index << std::endl;
             ll index_son = b.son[index];
             Leave le;
             fileIndex.seekg(index_son);
             fileIndex.read(reinterpret_cast<char *>(&le), sizeof(Leave));
-//            std::cout << "KEY " << key<<' ' << le.num << std::endl;
             for (index = 0; index < le.num; ++index){
-//                std::cout << "COMPARE " << key << le.array[index+1].key << ' ' << com(key, le.array[index + 1].key) << std::endl;
                 if (com(key, le.array[index + 1].key)){
                     break;//下一个大于自己就取当前所在位置，退出循环
                 }
             }
             if(!index)return false;
-//            std::cout << "KEY_LEAVE " << key<<' ' << le.array[index].key<<' '<<index << std::endl;
             if(!com(le.array[index].key,key)&&!com(key,le.array[index].key))le.array[index].value=value;
             else return false;
             fileIndex.seekg(index_son);
@@ -1047,34 +846,19 @@ namespace lailai {
 
         BPT(const std::string &file) : file_name(file) {
             fileIndex.open(file_name, ios::out | ios::in | ios::binary);
-//            std::cout << "qwq" << std::endl;
             if (!fileIndex.good()) {
-//                std::cout << "qwq" << std::endl;
-//                cout << "here" << endl;
                 fileIndex.open(file_name, ios::out);
                 fileIndex.close();
                 fileIndex.open(file_name, ios::out | ios::in | ios::binary);
                 basicManager.index_root=sizeof(basicManager);
                 fileIndex.seekg(0);
                 fileIndex.write(reinterpret_cast<char *>(&basicManager), sizeof(basicManager));
-//                fileIndex.write(reinterpret_cast<char *>(&basicManager.totalblock), sizeof(int));
-//                fileIndex.seekg(sizeof(int));
-//                basicManager.totalleave = 0;
-//                fileIndex.write(reinterpret_cast<char *>(&basicManager.totalleave), sizeof(int));
-//                fileIndex.seekg(2 * sizeof(int));
-//                basicManager.index_root = 2 * sizeof(int) + sizeof(ll);
-//                fileIndex.write(reinterpret_cast<char *>(&basicManager.index_root), sizeof(ll));
                 fileIndex.seekg(basicManager.index_root);
                 fileIndex.write(reinterpret_cast<char *>(&root), sizeof(Block));
             } else {
                 fileIndex.seekg(0);
                 fileIndex.read(reinterpret_cast<char *>(&basicManager), sizeof(basicManager));
-//                fileIndex.seekg(sizeof(int));
-//                fileIndex.read(reinterpret_cast<char *>(&totalleave), sizeof(int));
-//                fileIndex.seekg(2 * sizeof(int));
-//                fileIndex.read(reinterpret_cast<char *>(&index_root), sizeof(ll));
                 fileIndex.seekg(basicManager.index_root);
-//                std::cout << "qwq" << std::endl;
                 fileIndex.read(reinterpret_cast<char *>(&root), sizeof(Block));
             }
         };
@@ -1082,27 +866,15 @@ namespace lailai {
         ~BPT() {
             fileIndex.seekg(0);
             fileIndex.write(reinterpret_cast<char *>(&basicManager), sizeof(basicManager));
-//            fileIndex.seekg(2 * sizeof(int));
-//            fileIndex.write(reinterpret_cast<char *>(&index_root), sizeof(ll));
-//            fileIndex.seekg(0);
-//            fileIndex.write(reinterpret_cast<char *>(&totalblock), sizeof(int));
-//            fileIndex.seekg(sizeof(int));
-//            fileIndex.write(reinterpret_cast<char *>(&totalleave), sizeof(int));
             fileIndex.seekg(basicManager.index_root);
             fileIndex.write(reinterpret_cast<char *>(&root), sizeof(Block));
             fileIndex.close();
         };
         void remove(const Node &key_) {//确定存在的情况下
-//            Node key(key_, 1);
             int i;
             for(i = 0; i<root.num; ++i){
                 if(com(key_.key,root.key[i+1]))break;
             }
-            //debug
-//            cout <<"---root----"<< endl;
-//            for(int j = 1; j <= root.num; ++j ) cout << root.key[j].key << ' ';
-//            cout << "\n-------" << endl;
-//            cout << "root :" << root.key[1].key << endl;
             if(root.isbottom){
                 Leave son;
                 ll index_son = root.son[i];
@@ -1111,17 +883,10 @@ namespace lailai {
                 son.fa.first=&root;
                 son.fa.second=i;
                 if(leremove(son,key_,index_son)){
-//                    cout << "YES" << endl;
-//                    cout << root.num <<"qwq"<< endl;
                     if(!root.num){//合并只剩下一个儿子
-//                        cout << "here" << endl;
                         Leave l,r;
                         fileIndex.seekg(root.son[0]);
                         fileIndex.read(reinterpret_cast<char *>(&l), sizeof(Leave));
-//                        if(!l.num){
-//                            fileIndex.seekg(index_root);
-//                            fileIndex.write(reinterpret_cast<char *>(&root), sizeof(Block));
-//                        }
                         if(l.num){//左儿子取空叶子结点
                             ll index;
                             ++root.num;
@@ -1163,10 +928,6 @@ namespace lailai {
 
                 }
             }
-            //debug
-//            cout <<"---root write---" <<endl;
-//            cout << root.num;
-//            cout <<
             fileIndex.seekg(basicManager.index_root);
             fileIndex.write(reinterpret_cast<char *>(&root), sizeof(Block));
         }
@@ -1176,13 +937,6 @@ namespace lailai {
         }
 
         bool Getone(const K &key,S &value){
-//            vector<ll> v;
-//            v.clear();
-//            find_list_b(root, key, v);
-//            if(v.empty())return false;
-//            value= v[0];
-//            return true;
-//            ll index = 223372036854775807;
             Node n(key,value);
             bool flag = find_one_block(n,root);
             if(!flag)return false;
@@ -1201,13 +955,8 @@ namespace lailai {
             return true;
         }
 
-        void reset() {
-//          fileIndex.close();
-//          fileIndex.open(file_name,ios::in|ios::out|ios::binary);
-        }
-
         bool Modify(const K &key,const S &value){
-        return modify(root,key,value);
+            return modify(root,key,value);
         }
     };
 }

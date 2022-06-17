@@ -16,31 +16,14 @@
 #include "../lib/vector.hpp"
 
 
-/*
- * add_user
- * login
- * logout
- * modify_profile
- * add_train
- * delete_train
-
- * release_train
- * buy_ticket
- * refund_ticket
- * rollback
- */
-
-
 using std::cout;
 using std::endl;
 
 class Manager {
 private:
     linked_hashmap<std::string, int> online;
-    // TODO:
     lailai::map<Varchar, User> user_;
     lailai::map<Varchar, Train> train_;
-    // lailai::map<std::pair<Varchar, Date>, dayTrain> daytrain_;
     lailai::map<size_t, dayTrain> daytrain_;
     lailai::map<std::pair<Varchar, Varchar>, stationTrain> stationtrain_;
     lailai::map<std::pair<std::pair<Varchar, Date>, int>, int> pending_order_;
@@ -50,13 +33,13 @@ private:
 
 public:
 
-    Manager() : user_("user"),//, 0),
-                train_("train"),//, 1),
-                daytrain_("daytrain"),//, 1),
-                order_("order", 1),//, 0),
-                stationtrain_("stationtrain"),//, 0),
-                pending_order_("pendingorder"),//, 0),
-                user_order_("userorder") { //, 0), {
+    Manager() : user_("user"),
+                train_("train"),
+                daytrain_("daytrain"),
+                order_("order", 1),
+                stationtrain_("stationtrain"),
+                pending_order_("pendingorder"),
+                user_order_("userorder") {
         order_.get_info(usercnt, 1);
         srand(time(0));
     }
@@ -561,10 +544,6 @@ public:
         std::system("rm -f *.dat");
         usercnt = 0;
         return "okk";
-    }
-
-    void offline() {
-        online.clear();
     }
 };
 
