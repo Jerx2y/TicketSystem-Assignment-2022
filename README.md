@@ -10,6 +10,4 @@
 
 [开发文档](https://github.com/Jerx2y/TicketSystem-Assignment-2022/blob/w/docs/BackEnd%20Document.md)
 
-> 于Jun-16-2022 16:38:25 通过 OJ 测试点辣！
-
-> 前端施工中...
+> 这是实现了 rollback 的版本，已于 Jun-17-2022 01:11:59 通过 OJ 测试辣！
