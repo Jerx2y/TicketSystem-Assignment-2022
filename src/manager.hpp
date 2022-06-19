@@ -21,12 +21,12 @@ using std::cout;
 class Manager {
 private:
     linked_hashmap<std::string, int> online;
-    lailai::map<Varchar, User, hash_varchar> user_;
-    lailai::map<Varchar, Train, hash_varchar> train_;
-    lailai::map<size_t, dayTrain> daytrain_;
-    lailai::map<std::pair<Varchar, Varchar>, stationTrain, hash_vv> stationtrain_;
-    lailai::map<std::pair<std::pair<Varchar, Date>, int>, int, hash_vdi> pending_order_;
-    lailai::map<std::pair<Varchar, int>, int, hash_vi> user_order_;
+    lailai::map<Varchar, User, 0, hash_varchar> user_;
+    lailai::map<Varchar, Train, 100, hash_varchar> train_;
+    lailai::map<size_t, dayTrain, 100> daytrain_;
+    lailai::map<std::pair<Varchar, Varchar>, stationTrain, 0, hash_vv> stationtrain_;
+    lailai::map<std::pair<std::pair<Varchar, Date>, int>, int, 0, hash_vdi> pending_order_;
+    lailai::map<std::pair<Varchar, int>, int, 0, hash_vi> user_order_;
     Storage<Order> order_;
     int usercnt;
 

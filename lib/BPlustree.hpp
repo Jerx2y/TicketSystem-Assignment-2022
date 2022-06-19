@@ -9,7 +9,7 @@ using std::ios;
 using std::fstream;
 namespace lailai {
     template<class K,class S, class Compare = std::less<K>> class BPT;
-    template<class K, class S, class HASH = std::hash<K>, class Compare = std::less<K>,class Com=std::less<S>>
+    template<class K, class S, int needCache = 0, class HASH = std::hash<K>, class Compare = std::less<K>,class Com=std::less<S>>
     class map{//可以直接在map层面做缓存，用linkedehashmap实现；查找key对应的value的时候可以直接从内存里读取；
     private:
         Compare compare;
@@ -48,7 +48,7 @@ namespace lailai {
             Compare compare;
             HASH hash;
         public:
-            Cache():total(0){
+            Cache():total(0),Size(needCache){
                 array = new node*[Size];
                 for(int i = 0; i < Size; ++i){
                     array[i]= nullptr;
@@ -139,29 +139,36 @@ namespace lailai {
             bpt.Get(left,right,v);
         }
         bool Getone(const K &key, S &value){
-            if(cache.find(key,value))return true;
-            bool flag = bpt.Getone(key,value);
-            if(!flag)return false;
-            else{
-                cache.set(key,value);
-                return true;
-            }
+            if (needCache) {
+                if(cache.find(key,value))return true;
+                bool flag = bpt.Getone(key,value);
+                if(!flag)return false;
+                else{
+                    cache.set(key,value);
+                    return true;
+                }
+            } else return bpt.Getone(key, value);
         }
         int count(const K &key) {
             S v;
+            if (needCache && cache.find(key, v))
+                return true;
             return bpt.Getone(key, v);
         }
         void Modify(const K &key, const S &value) { // need to be changed
+            if (needCache)
                 cache.set(key,value);
-                bpt.Modify(key,value);
+            bpt.Modify(key,value);
         }
         void Insert(const K &key,const S &value){
-            cache.set(key,value);
+            if (needCache) 
+                cache.set(key,value);
             bpt.Insert(key,value);
         }
         bool Remove(const K &key, const S &value){
 //            std::cout << "remove cache before" << std::endl;
-            cache.remove(key,value);
+            if (needCache)
+                cache.remove(key,value);
 //            std::cout << "remove cache finished" << std::endl;
             return bpt.Remove(key,value);
         }
