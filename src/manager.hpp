@@ -14,33 +14,31 @@
 #include "../lib/storage.hpp"
 #include "../lib/BPlustree.hpp"
 #include "../lib/vector.hpp"
+#include "../lib/hash.hpp"
 
 using std::cout;
-using std::endl;
 
 class Manager {
 private:
     linked_hashmap<std::string, int> online;
-    // TODO:
-    lailai::map<Varchar, User> user_;
-    lailai::map<Varchar, Train> train_;
-    // lailai::map<std::pair<Varchar, Date>, dayTrain> daytrain_;
+    lailai::map<Varchar, User, hash_varchar> user_;
+    lailai::map<Varchar, Train, hash_varchar> train_;
     lailai::map<size_t, dayTrain> daytrain_;
-    lailai::map<std::pair<Varchar, Varchar>, stationTrain> stationtrain_;
-    lailai::map<std::pair<std::pair<Varchar, Date>, int>, int> pending_order_;
-    lailai::map<std::pair<Varchar, int>, int> user_order_;
+    lailai::map<std::pair<Varchar, Varchar>, stationTrain, hash_vv> stationtrain_;
+    lailai::map<std::pair<std::pair<Varchar, Date>, int>, int, hash_vdi> pending_order_;
+    lailai::map<std::pair<Varchar, int>, int, hash_vi> user_order_;
     Storage<Order> order_;
     int usercnt;
 
 public:
 
-    Manager() : user_("user"),//, 0),
-                train_("train"),//, 1),
-                daytrain_("daytrain"),//, 1),
-                order_("order", 1),//, 0),
-                stationtrain_("stationtrain"),//, 0),
-                pending_order_("pendingorder"),//, 0),
-                user_order_("userorder") { //, 0), {
+    Manager() : user_("user"),
+                train_("train"),
+                daytrain_("daytrain"),
+                order_("order", 1),
+                stationtrain_("stationtrain"),
+                pending_order_("pendingorder"),
+                user_order_("userorder") {
         order_.get_info(usercnt, 1);
         srand(time(0));
     }
@@ -64,7 +62,7 @@ public:
 
         User tmp(info);
         user_.Insert(Varchar(info.get('u')), tmp);
-        cout << '0' << endl;
+        cout << '0' << '\n';
         
         usercnt++;
 
@@ -83,7 +81,7 @@ public:
             return "login: password wrong";
 
         online.insert(pair(info.get('u'), tmp.privilege));
-        cout << '0' << endl;
+        cout << '0' << '\n';
 
         return "okk";
     }
@@ -92,7 +90,7 @@ public:
         if (!online.count(info.get('u')))
             return "logout: user is not online";
         online.erase(info.get('u'));
-        cout << '0' << endl;
+        cout << '0' << '\n';
 
         return "okk";
     }
@@ -110,7 +108,7 @@ public:
         if (!(tmp.privilege < p || (tmp.privilege == p && info.get('u') == info.get('c'))))
             return "query_profile: have not premission";
         
-        cout << tmp.username << ' ' << tmp.name << ' ' << tmp.mailAddr << ' ' << tmp.privilege << endl;
+        cout << tmp.username << ' ' << tmp.name << ' ' << tmp.mailAddr << ' ' << tmp.privilege << '\n';
 
         return "okk";
     }
@@ -141,7 +139,7 @@ public:
 
         user_.Modify(tmp.usernameHash, tmp);
 
-        cout << tmp.username << ' ' << tmp.name << ' ' << tmp.mailAddr << ' ' << tmp.privilege << endl;
+        cout << tmp.username << ' ' << tmp.name << ' ' << tmp.mailAddr << ' ' << tmp.privilege << '\n';
     
         return "okk";
     }
@@ -153,7 +151,7 @@ public:
         Train tmp;
         tmp.set(info);
         train_.Insert(Varchar(info.get('i')), tmp);
-        cout << '0' << endl;
+        cout << '0' << '\n';
 
         return "okk";
     }
@@ -166,7 +164,7 @@ public:
         if (tmp.released) 
             return "delete_train: train has already released";
         train_.Remove(Varchar(info.get('i')), tmp);
-        cout << '0' << endl;
+        cout << '0' << '\n';
 
         return "okk";
     }
@@ -198,7 +196,7 @@ public:
             stationtrain_.Insert(std::make_pair(Varchar(tmp.stationID[i]), tmp.trainIDhash), stmp);
         }
 
-        cout << '0' << endl;
+        cout << '0' << '\n';
 
         return "okk";
     }
@@ -217,7 +215,7 @@ public:
             daytrain_.Getone(Varchar(info.get('i')).var ^ start.now, dtmp);
         else dtmp = dayTrain(tmp.seatNum);
 
-        cout << tmp.trainID << ' ' << tmp.type << endl;
+        cout << tmp.trainID << ' ' << tmp.type << '\n';
         for (int i = 0; i < tmp.stationNum; ++i) {
             cout << tmp.stationID[i] << ' ';
             if (i == 0) cout << "xx-xx xx:xx";
@@ -228,7 +226,7 @@ public:
             cout << ' ' << tmp.prices[i] << ' ';
             if (i == tmp.stationNum - 1) cout << 'x';
             else cout << dtmp.getseat(i);
-            cout << endl;
+            cout << '\n';
         }
     
         return "okk";
@@ -243,7 +241,7 @@ public:
         stationtrain_.Get(std::make_pair(Varchar(info.get('t')), 0), std::make_pair(Varchar(info.get('t')), SIZE_MAX), ttrain);
 
         if (strain.empty() || ttrain.empty())
-            return cout << 0 << endl, "okk";
+            return cout << 0 << '\n', "okk";
 
 //        mysort<stationTrain>(strain.begin(), strain.end());
 //        mysort<stationTrain>(ttrain.begin(), ttrain.end());
@@ -276,12 +274,12 @@ public:
 
         mysort<ticketTrain>(atrain.begin(), atrain.end());
 
-        std::cout << atrain.size() << std::endl;
+        std::cout << atrain.size() << '\n';
         for (const auto &i : atrain)
             std::cout << i.second << ' '
                       << info.get('s') << ' ' << i.leaveTime.get_mmddhrmi() << " -> "
                       << info.get('t') << ' ' << i.arriveTime.get_mmddhrmi() << ' '
-                      << i.price << ' ' << i.seat << std::endl;
+                      << i.price << ' ' << i.seat << '\n';
 
         return "okk";
     }
@@ -364,7 +362,7 @@ public:
         delete []ttt;
 
         if (ans.first == INF)
-            return std::cout << 0 << std::endl, "okk";
+            return std::cout << 0 << '\n', "okk";
         
         dayTrain dt1, dt2;
 
@@ -377,12 +375,12 @@ public:
         std::cout << ans.train1 << ' '
                   << info.get('s') << ' ' << ans.leave1.get_mmddhrmi() << " -> "
                   << ans.station << ' ' << ans.arrive1.get_mmddhrmi() << ' '
-                  << ans.cost1 << ' ' << seat1 << std::endl;
+                  << ans.cost1 << ' ' << seat1 << '\n';
 
         std::cout << ans.train2 << ' '
                   << ans.station << ' ' << ans.leave2.get_mmddhrmi() << " -> "
                   << info.get('t') << ' ' << ans.arrive2.get_mmddhrmi() << ' '
-                  << ans.cost2 << ' ' << seat2 << std::endl;
+                  << ans.cost2 << ' ' << seat2 << '\n';
 
         return "okk";
     }
@@ -434,13 +432,13 @@ public:
             int idx = order_.write(porder);
             pending_order_.Insert(std::make_pair(std::make_pair(Varchar(t.trainIDhash), startDay), idx), idx);
             user_order_.Insert(std::make_pair(Varchar(info.get('u')), idx), idx);
-            std::cout << prices << std::endl;
+            std::cout << prices << '\n';
         } else if (info.get('q') == "true") {
             porder.set(startDay, info.get('i').c_str(), si, ti, info.get('f').c_str(), info.get('t').c_str(), 1, leavingTime, arrivingTime, prices, buyNum);
             int idx = order_.write(porder);
             pending_order_.Insert(std::make_pair(std::make_pair(Varchar(t.trainIDhash), startDay), idx), idx);
             user_order_.Insert(std::make_pair(Varchar(info.get('u')), idx), idx);
-            std::cout << "queue" << std::endl;
+            std::cout << "queue" << '\n';
         } else return "buy_ticket: buy ticket failed";
 
         return "okk";
@@ -453,7 +451,7 @@ public:
         user_order_.Get(std::make_pair(Varchar(info.get('u')), 0),
                         std::make_pair(Varchar(info.get('u')), INF),
                         range);
-        std::cout << range.size() << std::endl;
+        std::cout << range.size() << '\n';
         for (int i = range.size() - 1; i >= 0; --i) {
             Order o;
             order_.read(o, range[i]);
@@ -463,7 +461,7 @@ public:
             std::cout << o.trainID << ' ' \
                       << o.startStation << ' ' << o.leavingTime.get_mmddhrmi() << " -> " \
                       << o.endStation << ' ' << o.arrivingTime.get_mmddhrmi() << ' ' \
-                      << o.prices / o.num << ' ' << o.num << std::endl;
+                      << o.prices / o.num << ' ' << o.num << '\n';
         }
     
         return "okk";
@@ -518,7 +516,7 @@ public:
         o.status = 2;
         order_.update(o, range[idx]);
 
-        std::cout << '0' << std::endl;
+        std::cout << '0' << '\n';
 
         return "okk";
     }

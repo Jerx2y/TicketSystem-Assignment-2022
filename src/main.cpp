@@ -11,8 +11,7 @@ int main() {
     while (readline(opt, timestamp, info)) {
         std::string result;
 
-        if (opt != "offline")
-            cout << timestamp << ' ';
+        cout << timestamp << ' ';
 
         if (opt == "add_user")
             result = sys.add_user(info);
@@ -47,11 +46,9 @@ int main() {
         if (opt == "exit")
             return std::cout << "bye" << std::endl, 0;
         
-        if (opt == "offline")
-            sys.offline(), result = "okk";
-        
         if (result != "okk") {
             std::cout << -1 << std::endl;
+            // std::cout << result << std::endl;
         }
 
         info.reset();
